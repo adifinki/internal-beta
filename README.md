@@ -1,8 +1,10 @@
-[![Status](https://img.shields.io/badge/status-beta-blue)](https://github.com/adifinki/internal-beta)
-[![GitHub stars](https://img.shields.io/github/stars/adifinki/internal-beta?style=flat)](https://github.com/adifinki/internal-beta/stargazers)
-[![Last Commit](https://img.shields.io/github/last-commit/adifinki/internal-beta)](https://github.com/adifinki/internal-beta/commits/main)
-[![License](https://img.shields.io/github/license/adifinki/internal-beta)](https://github.com/adifinki/internal-beta/blob/main/LICENSE)
-[![Issues](https://img.shields.io/github/issues/adifinki/internal-beta)](https://github.com/adifinki/internal-beta/issues)
+<p align="center">
+  <a href="https://github.com/adifinki/internal-beta/stargazers"><img src="https://img.shields.io/github/stars/adifinki/internal-beta?style=for-the-badge&color=yellow" alt="Stars"></a>
+  <a href="https://github.com/adifinki/internal-beta/blob/main/LICENSE"><img src="https://img.shields.io/github/license/adifinki/internal-beta?style=for-the-badge&color=blue" alt="License"></a>
+  <a href="https://github.com/adifinki/internal-beta/commits/main"><img src="https://img.shields.io/github/last-commit/adifinki/internal-beta?style=for-the-badge&color=green" alt="Last Commit"></a>
+  <img src="https://img.shields.io/badge/Self--Hosted-Ready-7289DA?style=for-the-badge&logo=keepassxc" alt="Self-Hosted">
+  <img src="https://img.shields.io/badge/Maintained-Yes-2ea44f?style=for-the-badge" alt="Maintained">
+</p>
 
 # <img src="data:image/svg+xml,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%229.5%22%20cy%3D%2212%22%20r%3D%226.5%22%20stroke%3D%22rgba(148%2C163%2C184%2C0.4)%22%20stroke-width%3D%221%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2212%22%20r%3D%226.5%22%20stroke%3D%22rgba(148%2C163%2C184%2C0.8)%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E" height="28" /> Internal Beta
 
