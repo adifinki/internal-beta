@@ -2,7 +2,6 @@
   <a href="https://github.com/adifinki/internal-beta/stargazers"><img src="https://img.shields.io/github/stars/adifinki/internal-beta?style=for-the-badge&color=yellow" alt="Stars"></a>
   <a href="https://github.com/adifinki/internal-beta/commits/main"><img src="https://img.shields.io/github/last-commit/adifinki/internal-beta?style=for-the-badge&color=green" alt="Last Commit"></a>
   <img src="https://img.shields.io/badge/Self--Hosted-Ready-7289DA?style=for-the-badge&logo=docker" alt="Self-Hosted">
-  <a href="https://github.com/adifinki/internal-beta/blob/main/LICENSE"><img src="https://img.shields.io/github/license/adifinki/internal-beta?style=for-the-badge&color=blue" alt="License"></a>
 </p>
 
 # 📈 Internal Beta
