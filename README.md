@@ -1,6 +1,12 @@
+[![Status](https://img.shields.io/badge/status-beta-blue)](https://github.com/adifinki/internal-beta)
+[![GitHub stars](https://img.shields.io/github/stars/adifinki/internal-beta?style=flat)](https://github.com/adifinki/internal-beta/stargazers)
+[![Last Commit](https://img.shields.io/github/last-commit/adifinki/internal-beta)](https://github.com/adifinki/internal-beta/commits/main)
+[![License](https://img.shields.io/github/license/adifinki/internal-beta)](https://github.com/adifinki/internal-beta/blob/main/LICENSE)
+[![Issues](https://img.shields.io/github/issues/adifinki/internal-beta)](https://github.com/adifinki/internal-beta/issues)
+
 # <img src="data:image/svg+xml,%3Csvg%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Ccircle%20cx%3D%229.5%22%20cy%3D%2212%22%20r%3D%226.5%22%20stroke%3D%22rgba(148%2C163%2C184%2C0.4)%22%20stroke-width%3D%221%22%2F%3E%3Ccircle%20cx%3D%2214.5%22%20cy%3D%2212%22%20r%3D%226.5%22%20stroke%3D%22rgba(148%2C163%2C184%2C0.8)%22%20stroke-width%3D%221%22%2F%3E%3C%2Fsvg%3E" height="28" /> Internal Beta
 
-**Open-source portfolio risk analyzer** for stock investors. Measures how any stock moves relative to *your specific portfolio* — not the S&P 500. Built with Python, FastAPI, React, and real-time financial data.
+**Open-source portfolio risk analyzer** for stock investors. Measures how any stock moves relative to *your specific portfolio*. Built with Python, FastAPI, React, and real-time financial data.
 
 > **Portfolio risk management** | **Stock screener** | **Candidate stock analysis** | **Efficient frontier** | **Value at Risk** | **GARP investing** | **Quality scoring** | **Sharpe & Sortino ratios** | **Sector stress testing** | **Momentum analysis**
 
