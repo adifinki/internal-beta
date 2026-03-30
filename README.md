@@ -8,34 +8,29 @@
 
 ## Why Internal Beta?
 
-Every brokerage shows you beta vs the S&P 500. But that's not *your* risk. A stock with market beta 1.2 might have internal beta 0.3 against your specific holdings — a great diversifier *for you*.
+Every brokerage shows you beta vs the S&P 500. But that's not *your* risk. A stock with market beta 1.2 might have internal beta 0.3 against your specific holdings - a great diversifier *for you*.
 
 ```
 beta_internal = Cov(r_candidate, r_portfolio) / Var(r_portfolio)
 ```
-
-This is the metric Morningstar, Yahoo Finance, and your brokerage don't provide. Internal Beta computes it from your actual positions.
-
 ---
 
 ## What It Does
 
 ### Portfolio Risk Dashboard
-Full risk analysis across 15+ metrics: **Sharpe ratio**, **Sortino ratio**, **Value at Risk (VaR)**, **Conditional VaR / Expected Shortfall (CVaR)**, **max drawdown**, **momentum scoring**, **MCTR** (marginal contribution to risk), **correlation matrix**, **efficient frontier**, **concentration analysis** (sector/geography/currency/HHI), **hedging exposure**, **correlation clusters**, and **stress testing** against historical crashes.
+Risk analysis: **Sharpe ratio**, **max drawdown**, **MCTR** (marginal contribution to risk), **correlation matrix**, **efficient frontier**, **concentration analysis** (sector/geography/currency/HHI), **hedging exposure**, and **correlation clusters**.
 
 ### Candidate Stock Analysis ("Should I buy this?")
-Pick any stock. The system auto-computes the optimal number of shares using a **5-factor composite score** — Sharpe improvement, volatility reduction, diversification benefit, tail risk (CVaR), and quality-valuation fit — then shows before/after comparisons for every metric, an efficient frontier overlay, and a concentration delta.
+Pick any stock. The system auto-computes the optimal number of shares using a **5-factor composite score** — Sharpe improvement, volatility reduction, diversification benefit, tail risk (CVaR), and quality-valuation fit, then shows before/after comparisons for every metric, an efficient frontier overlay, and a concentration delta.
 
 ### Stock Screener (1,000+ tickers)
-Scans **S&P 500**, **S&P 400 mid-caps**, plus **Israel, Europe, and emerging market** universes. Ranks by cheap-quality score (quality x valuation). Shows **Internal Beta** and **portfolio fit** for each candidate. Filter by sector, sort by any column, download CSV. Results stream in real-time via SSE.
+Scans **S&P 400 mid-caps**. Ranks by cheap-quality score (quality x valuation). Shows **Internal Beta** and **portfolio fit** for each candidate. Filter by sector, sort by any column, download CSV. Results stream in real-time via SSE.
 
 ### Quality & GARP Scoring
-Every stock gets a **quality score** (0-100) from ROIC, gross margins, FCF yield, earnings consistency, debt health, and revenue growth. Plus a **GARP score** (Growth at a Reasonable Price) from PEG ratio, earnings growth, revenue growth, and forward P/E. **Thesis health check** flags when a compounding thesis is breaking down. **Moat rating** (Wide/Narrow/None) approximated from 5-year ROIC history.
+Every stock gets a **quality score** (0-100) from ROIC, gross margins, FCF yield, earnings consistency, debt health, and revenue growth. Plus a **GARP score** (Growth at a Reasonable Price) from PEG ratio, earnings growth, revenue growth, and forward P/E. **Thesis health check** flags when a compounding thesis is breaking down.
 
-### Stress Testing & Scenario Analysis
-See how your portfolio would have performed during the **2020 COVID crash** (-34% S&P) and **2022 rate shock** (-19% S&P) using actual historical returns. Run **sector scenario analysis**: "what if Technology drops 20%?" using ETF proxies (XLK, TLT, GLD, etc.) with per-holding breakdown.
 
-### AI-Powered Recommendations
+### Considerations 
 Evidence-based **add/trim/exit/rebalance** suggestions driven by thesis health, concentration risks, risk contribution (MCTR), momentum signals, quality-valuation alignment, and age-appropriate asset allocation. Each recommendation includes an evidence string explaining the reasoning. Tuned to your investor profile:
 
 | Profile | Age | Target Allocation | Drawdown Threshold |
@@ -52,16 +47,16 @@ Evidence-based **add/trim/exit/rebalance** suggestions driven by thesis health, 
 | Tab | Capabilities |
 |---|---|
 | **My Portfolio** | Donut chart, per-stock breakdown (price/shares/value/weight), collapsible fundamentals (P/E, margins, 52-week range, business summary) |
-| **Analysis** | Sharpe, Sortino, VaR, CVaR, max drawdown, momentum, MCTR, internal beta (leave-one-out), correlation matrix, correlation clusters, quality/GARP/moat/thesis health, concentration (sector/geo/currency/HHI), efficient frontier, stress scenarios, sector scenarios, recommendations |
-| **Test a Stock** | 5-factor optimal allocation, before/after risk deltas, Internal Beta verdict, efficient frontier overlay, concentration delta |
-| **Find a Stock** | 1,000+ tickers, 6 universes (US/Israel/Europe/EM), sector filtering, quality sorting, Internal Beta + portfolio fit, CSV export, SSE streaming |
+| **Analysis** | Sharpe, max drawdown, MCTR, internal beta (leave-one-out), correlation matrix, correlation clusters, quality/GARP/thesis health, concentration (sector/geo/currency/HHI), efficient frontier, sector scenarios |
+| **Test a Stock** | 5-factor optimal allocation, before/after risk deltas, Internal Beta verdict, concentration delta |
+| **Find a Stock** | snp 400 sector filtering, quality sorting, Internal Beta + portfolio fit |
 
 ---
 
 ## How to Use
 
 ### 1. Enter your holdings
-Type a ticker (e.g. `AAPL`, `SCHG`, `CSPX.L`), enter shares, press Enter. Works with stocks and ETFs across global exchanges.
+Type a ticker (e.g. `AAPL`, `SCHG`, `CSPX.L`), enter shares, press Enter. 
 
 Holdings persist in the URL (`?h=AAPL:100,MSFT:50`) — bookmark or share to restore your portfolio.
 
@@ -69,13 +64,13 @@ Holdings persist in the URL (`?h=AAPL:100,MSFT:50`) — bookmark or share to res
 Donut chart sorted by position size. Hover to highlight across chart and table. Click any row to expand fundamentals.
 
 ### 3. Analysis
-Loads with 2+ holdings. Shows all risk metrics, quality scores, correlation heatmap, efficient frontier with your portfolio plotted, stress scenarios, sector "what if" analysis, and actionable recommendations. Hover **(i)** icons for explanations.
+Loads with 2+ holdings. Shows all risk metrics, quality scores, correlation heatmap, efficient frontier with your portfolio plotted,  and actionable considerations. Hover **(i)** icons for explanations.
 
 ### 4. Test a Stock
 Enter a candidate ticker. System grid-searches allocations from 1% to 40% (adapts to portfolio size) across 5 risk/quality factors. Shows the optimal allocation with a plain-English Internal Beta verdict and full before/after comparison.
 
 ### 5. Find a Stock
-Streams results from 1,000+ tickers with progress bar. Filter by sector and quality. If you have a portfolio loaded, each candidate shows Internal Beta and portfolio fit. Click "Analyze" to flow into candidate analysis.
+Streams results from 400 tickers with progress bar. Filter by sector and quality. If you have a portfolio loaded, each candidate shows Internal Beta and portfolio fit. Click "Analyze" to flow into candidate analysis.
 
 ---
 
@@ -145,19 +140,6 @@ sigma = std(log(1 + r_simple), ddof=1) * sqrt(252)
 ```
 Uses CAGR (not arithmetic mean) for consistency with the efficient frontier. Risk-free rate default: 4%.
 
-### Sortino Ratio
-Like Sharpe but only penalizes *downside* volatility. Uses CAGR in the numerator for consistency. Flagged as unreliable when fewer than 12 observations fall below the minimum acceptable return.
-
-### Value at Risk / Expected Shortfall (1-Day, Historical)
-- **VaR (95%)**: 5th percentile of daily portfolio returns x portfolio value
-- **CVaR / ES**: Average of all returns at or below VaR (Basel III/IV standard, inclusive boundary)
-
-No normality assumptions — uses actual return distribution.
-
-### Momentum Score (Jegadeesh-Titman)
-```
-raw_momentum = (1 + r_12m) / (1 + r_1m) - 1
-score = raw_momentum / annualized_volatility
 ```
 Skips the most recent month to avoid short-term reversal noise. Trend classification: strong_up (>0.75), up, neutral, down, strong_down (<-0.75).
 
@@ -184,21 +166,11 @@ ROIC (25%), Gross margin + stability (25%), FCF yield (15%), Earnings consistenc
 ### GARP Score (0-100)
 PEG ratio (40%), Earnings growth (25%), Revenue growth (15%), Forward P/E (20%). Only available components count.
 
-### Moat Rating (Wide / Narrow / None)
-Approximated from ROIC history. Wide: avg > 20%, min > 12%, all years > 10%. Narrow: avg > 12%, min > 6%. Requires 3+ years of data.
-
 ### Thesis Health Check
 Revenue trajectory, earnings growth, ROIC stability, FCF conversion, debt health across 5-year financials. Status: Strong / Monitor / Review / Broken. Uses 20% tolerance on deceleration to avoid false flags from high base rates.
 
 ### Correlation Clusters
 Pairs of holdings with |correlation| >= 0.8. Flags hidden concentration — two stocks in different sectors that move together provide less diversification than expected.
-
-### Stress Testing (Historical)
-Portfolio performance during actual market shocks:
-- **2020 COVID crash**: Feb 19 - Mar 23, 2020 (S&P -34%)
-- **2022 rate shock**: Jan 3 - Dec 31, 2022 (S&P -19%)
-
-Uses simple returns for multi-day compounding (accuracy matters most during stressed periods).
 
 ### Max Drawdown
 Peak-to-trough decline in cumulative wealth. Dollar figure is hypothetical: historical drawdown % applied to today's portfolio value. Includes recovery days from trough to next peak.
@@ -226,7 +198,7 @@ Historical frontier using Ledoit-Wolf covariance. Shows min-variance point, fron
 | numpy / pandas | Numerical computing |
 | redis-py (async) | Cache (24h prices, 30min analysis) |
 | SQLAlchemy (async) + asyncpg | PostgreSQL ORM |
-| pytest | 132 unit tests |
+| pytest | unit tests |
 | ruff | Linting + formatting |
 | pyright | Static type checking (strict mode) |
 
@@ -317,7 +289,7 @@ cd services/portfolio && poetry run pytest tests/ -v
 cd services/risk && poetry run pytest tests/ -v
 ```
 
-132 tests covering: log return computation, log-linear interpolation, Pearson correlation, Ledoit-Wolf covariance properties (symmetric, PSD), portfolio weights, quality/GARP scoring, MCTR, internal beta, VaR, CVaR, drawdown, stress scenarios, screener scoring, API response shapes.
+ tests covering: log return computation, log-linear interpolation, Pearson correlation, Ledoit-Wolf covariance properties (symmetric, PSD), portfolio weights, quality/GARP scoring, MCTR, internal beta, screener scoring, API response shapes.
 
 ```bash
 # Lint + format
