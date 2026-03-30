@@ -1,0 +1,121 @@
+services:
+
+  # ── Python microservices ────────────────────────────────────────────────────
+
+  market-data:
+    build:
+      context: ./services/market-data
+      dockerfile: Dockerfile
+      target: prod
+    ports:
+      - "8001:8001"
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - backend
+    restart: unless-stopped
+
+  portfolio:
+    build:
+      context: ./services/portfolio
+      dockerfile: Dockerfile
+      target: prod
+    ports:
+      - "8002:8002"
+    environment:
+      REDIS_URL: redis://redis:6379
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/portfolio_db
+      MARKET_DATA_URL: http://market-data:8001
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      market-data:
+        condition: service_started
+    networks:
+      - backend
+    restart: unless-stopped
+
+  risk:
+    build:
+      context: ./services/risk
+      dockerfile: Dockerfile
+      target: prod
+    ports:
+      - "8003:8003"
+    environment:
+      MARKET_DATA_URL: http://market-data:8001
+      PORTFOLIO_URL: http://portfolio:8002
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+      market-data:
+        condition: service_started
+      portfolio:
+        condition: service_started
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ── Gateway ─────────────────────────────────────────────────────────────────
+
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - market-data
+      - portfolio
+      - risk
+    networks:
+      - backend
+    restart: unless-stopped
+
+  # ── Data stores ─────────────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: portfolio_db
+    volumes:
+      - ./infrastructure/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  postgres_data:

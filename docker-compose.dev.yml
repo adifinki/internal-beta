@@ -1,0 +1,29 @@
+# Development overrides — bind-mounts src/ for hot-reload, builds dev stage.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#
+# What changes vs production:
+#   - Builds the "dev" Dockerfile stage (includes dev deps, --reload flag)
+#   - src/ is bind-mounted so code changes take effect without rebuilding
+#   - All service ports are exposed directly (bypass nginx for easier debugging)
+
+services:
+
+  market-data:
+    build:
+      target: dev
+    volumes:
+      - ./services/market-data/src:/app/src
+
+  portfolio:
+    build:
+      target: dev
+    volumes:
+      - ./services/portfolio/src:/app/src
+
+  risk:
+    build:
+      target: dev
+    volumes:
+      - ./services/risk/src:/app/src

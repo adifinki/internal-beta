@@ -1,0 +1,87 @@
+repos:
+
+  # ── General file quality ─────────────────────────────────────────────────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+
+  # ── Python: ruff lint + format ───────────────────────────────────────────────
+  # pre-commit manages ruff's environment — nothing to install manually.
+  # ruff discovers the nearest pyproject.toml so each service's own config
+  # (line length, selected rules, etc.) is respected automatically.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.14
+    hooks:
+      - id: ruff
+        name: ruff lint (services)
+        args: [--fix]
+        files: ^services/(market-data|portfolio|risk)/
+      - id: ruff-format
+        name: ruff format (services)
+        files: ^services/(market-data|portfolio|risk)/
+
+  # # ── Python: pyright type checking ───────────────────────────────────────────
+  # # language: node  →  pre-commit installs pyright via npm automatically.
+  # # No Poetry or global pyright install required.
+  # #
+  # # --project <dir> tells pyright to use that directory's pyproject.toml,
+  # # which sets venvPath/venv so it finds the Poetry venv when present.
+  # #
+  # # ⚠ Prerequisite: run `poetry install` inside each service directory first.
+  # #   Without the venv, pyright cannot resolve third-party imports (fastapi,
+  # #   redis, etc.) and will block commits. This is intentional — unresolvable
+  # #   imports are a real type error.
+  # - repo: local
+  #   hooks:
+  #     - id: pyright-market-data
+  #       name: pyright (market-data)
+  #       entry: pyright --project services/market-data
+  #       language: node
+  #       additional_dependencies: ["pyright@1.1.408"]
+  #       files: ^services/market-data/
+  #       types: [python]
+  #       pass_filenames: false
+  #       timeout: 120
+
+  #     - id: pyright-portfolio
+  #       name: pyright (portfolio)
+  #       entry: pyright --project services/portfolio
+  #       language: node
+  #       additional_dependencies: ["pyright@1.1.408"]
+  #       files: ^services/portfolio/
+  #       types: [python]
+  #       pass_filenames: false
+  #       timeout: 120
+
+  #     - id: pyright-risk
+  #       name: pyright (risk)
+  #       entry: pyright --project services/risk
+  #       language: node
+  #       additional_dependencies: ["pyright@1.1.408"]
+  #       files: ^services/risk/
+  #       types: [python]
+  #       pass_filenames: false
+  #       timeout: 120
+
+  # ── Frontend: oxlint ──────────────────────────────────────────────────────────
+  # language: node  →  pre-commit installs oxlint via npm automatically.
+  # Only triggers when files inside services/frontend/ are staged.
+  - repo: local
+    hooks:
+      - id: oxlint-frontend
+        name: oxlint (frontend)
+        entry: oxlint
+        args: ["services/frontend/src"]
+        language: node
+        additional_dependencies: ["oxlint"]
+        files: ^services/frontend/
+        types_or: [ts, tsx, javascript]
+        pass_filenames: false
