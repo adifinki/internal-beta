@@ -12,7 +12,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      market_data_image: ${{ steps.meta-market-data.outputs.tags && fromJSON(steps.meta-market-data.outputs.json).tags[0] }}
+      market_data_image: ${{ fromJSON(steps.meta-market-data.outputs.json).tags[0] }}
       portfolio_image: ${{ fromJSON(steps.meta-portfolio.outputs.json).tags[0] }}
       risk_image: ${{ fromJSON(steps.meta-risk.outputs.json).tags[0] }}
       nginx_image: ${{ fromJSON(steps.meta-nginx.outputs.json).tags[0] }}
