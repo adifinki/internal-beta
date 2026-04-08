@@ -290,7 +290,7 @@ export default function Holdings({ holdings }: Props) {
                           <Stat label="52w Low" value={fmtDollar(n(r.info.fiftyTwoWeekLow))} />
                           <Stat label="52w High" value={fmtDollar(n(r.info.fiftyTwoWeekHigh))} />
                         </div>
-                        {r.info.longBusinessSummary && (
+                        {(r.info.longBusinessSummary as string | undefined) && (
                           <p className="mt-3 line-clamp-3 text-xs leading-relaxed text-slate-500">
                             {r.info.longBusinessSummary as string}
                           </p>
