@@ -65,5 +65,6 @@ Ensure you have **Docker** and **Docker Compose** installed, then run:
 git clone [https://github.com/adifinki/internal-beta.git](https://github.com/adifinki/internal-beta.git)
 cd internal-beta
 docker compose up --build
+```
 
 ### view the hosted version at internal-beta.adifinki.com
