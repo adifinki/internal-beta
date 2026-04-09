@@ -13,7 +13,7 @@ async def fetch_returns(
     res = await client.get(
         "/tickers/returns",
         params={"tickers": tickers, "period": period},
-        timeout=60.0,
+        timeout=120.0,
     )
     res.raise_for_status()
 

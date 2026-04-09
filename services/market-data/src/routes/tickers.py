@@ -94,13 +94,13 @@ async def _get_prices_cached(
         missing.append(ticker)
 
     if missing:
-        # Fetch in batches of 10 with a small gap to avoid Yahoo rate limits.
+        # Fetch in batches of 5 with a 2s gap to avoid Yahoo rate limits.
         # Portfolios with 15-20 tickers were hitting 429 Too Many Requests.
-        BATCH_SIZE = 10
+        BATCH_SIZE = 5
         for i in range(0, len(missing), BATCH_SIZE):
             batch = missing[i : i + BATCH_SIZE]
             if i > 0:
-                await asyncio.sleep(1)  # 1s between batches
+                await asyncio.sleep(2)  # 2s between batches
             fetched = await fetch_prices_batch(batch, period)
             for ticker, df in fetched.items():
                 payload = cast(
