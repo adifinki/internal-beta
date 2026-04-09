@@ -6,6 +6,23 @@ import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import Screener from "./pages/Screener";
 
+const LS_KEY = "portfolio_saved";
+
+interface SavedState {
+  holdings: Holding[];
+  age: number | null;
+}
+
+function loadFromLocalStorage(): SavedState | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SavedState;
+  } catch {
+    return null;
+  }
+}
+
 type Tab = "holdings" | "dashboard" | "candidate" | "screener";
 
 function parseHoldingsFromUrl(): Holding[] {
@@ -33,7 +50,11 @@ const TABS: { id: Tab; label: string; tooltip: string }[] = [
 ];
 
 export default function App() {
-  const [holdings, setHoldings] = useState<Holding[]>(() => parseHoldingsFromUrl());
+  const [holdings, setHoldings] = useState<Holding[]>(() => {
+    const fromUrl = parseHoldingsFromUrl();
+    if (fromUrl.length > 0) return fromUrl;
+    return loadFromLocalStorage()?.holdings ?? [];
+  });
   const [activeTab, setActiveTab] = useState<Tab>(() => parseTabFromUrl());
 
   useEffect(() => {
@@ -47,9 +68,21 @@ export default function App() {
     const qs = params.toString();
     window.history.replaceState({}, "", qs ? `?${qs}` : window.location.pathname);
   }, [holdings, activeTab]);
-  const [age, setAge] = useState<number | null>(null);
+  const [age, setAge] = useState<number | null>(() => loadFromLocalStorage()?.age ?? null);
+  const [hasSaved, setHasSaved] = useState(() => localStorage.getItem(LS_KEY) !== null);
   const [candidateTicker, setCandidateTicker] = useState("");
   const [candidateShares, setCandidateShares] = useState<number | null>(null);
+
+  function saveToLocalStorage() {
+    const state: SavedState = { holdings, age };
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+    setHasSaved(true);
+  }
+
+  function deleteFromLocalStorage() {
+    localStorage.removeItem(LS_KEY);
+    setHasSaved(false);
+  }
 
   function handleAnalyzeTicker(ticker: string) {
     setCandidateTicker(ticker);
@@ -65,7 +98,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#111318] text-slate-300">
       {/* Header */}
-      <header className="border-b border-white/[0.03] px-8 py-5">
+      <header className="border-b border-white/[0.03] px-8 py-5 flex items-center justify-between">
         <h1 className="flex items-center gap-3">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="9.5" cy="12" r="6.5" stroke="rgba(148,163,184,0.2)" strokeWidth="1" />
@@ -75,6 +108,41 @@ export default function App() {
             internal<span className="ml-1 font-medium text-slate-300">beta</span>
           </span>
         </h1>
+        <div className="flex items-center gap-2">
+          {/* Save button */}
+          <div className="relative group">
+            <button
+              onClick={saveToLocalStorage}
+              className="flex items-center gap-1.5 rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-500 transition-colors hover:border-white/[0.1] hover:text-slate-200"
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 2h7l2 2v7a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+                <rect x="4" y="8" width="5" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
+                <rect x="4" y="2" width="4" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
+              </svg>
+              Save to local storage
+            </button>
+            <div className="pointer-events-none absolute right-0 top-full mt-2 w-52 rounded-lg bg-[#1a1d24] border border-white/[0.08] px-3 py-2 text-[11px] leading-relaxed text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+              Saves your current portfolio holdings and age to this browser's local storage so they load automatically next visit.
+            </div>
+          </div>
+          {/* Delete from local storage button — only shown when saved data exists */}
+          {hasSaved && (
+            <div className="relative group">
+              <button
+                onClick={deleteFromLocalStorage}
+                className="rounded-lg border border-white/[0.06] bg-white/[0.03] p-1.5 text-slate-600 transition-colors hover:border-red-400/20 hover:text-red-400"
+              >
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M2 3.5h9M5 3.5V2.5a.5.5 0 01.5-.5h2a.5.5 0 01.5.5v1M3.5 3.5l.5 7h5l.5-7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <div className="pointer-events-none absolute right-0 top-full mt-2 w-52 rounded-lg bg-[#1a1d24] border border-white/[0.08] px-3 py-2 text-[11px] leading-relaxed text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                Removes your saved portfolio from local storage. The current session is not affected.
+              </div>
+            </div>
+          )}
+        </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-8 py-8">
