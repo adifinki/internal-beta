@@ -176,7 +176,7 @@ export default function EfficientFrontier({ frontier, candidatePosition, candida
             <Scatter
               data={portfolioData}
               fill="#5b8def"
-              name="Portfolio without Candidate"
+              name="Portfolio"
               legendType="circle"
               shape={(props: unknown) => {
                 const { cx, cy } = props as { cx: number; cy: number };
