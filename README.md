@@ -67,4 +67,4 @@ cd internal-beta
 docker compose up --build
 ```
 
-### view the hosted version at internal-beta.adifinki.com
+### View the hosted version at [internal-beta.adifinki.com](https://internal-beta.adifinki.com)
