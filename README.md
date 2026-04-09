@@ -62,7 +62,7 @@ The system is built as a high-performance, asynchronous microservices suite:
 Ensure you have **Docker** and **Docker Compose** installed, then run:
 
 ```bash
-git clone [https://github.com/adifinki/internal-beta.git](https://github.com/adifinki/internal-beta.git)
+git clone https://github.com/adifinki/internal-beta.git
 cd internal-beta
 docker compose up --build
 ```
