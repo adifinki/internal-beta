@@ -20,7 +20,17 @@ async def fetch_returns(
     # Response shape: {ticker: {date_iso: return_value}}
     # pd.DataFrame(data) reconstructs: columns=tickers, index=date strings.
     data: dict[str, dict[str, float]] = res.json()
-    return pd.DataFrame(data)
+    
+    # Validate we got data back
+    if not data:
+        return pd.DataFrame()
+    
+    # Only include tickers that have data
+    valid_data = {ticker: values for ticker, values in data.items() if values}
+    if not valid_data:
+        return pd.DataFrame()
+    
+    return pd.DataFrame(valid_data)
 
 
 async def fetch_ticker_info(
