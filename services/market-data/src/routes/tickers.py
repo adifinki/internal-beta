@@ -9,7 +9,7 @@ from io import StringIO
 from typing import Any, cast
 
 import pandas as pd
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from redis.asyncio import Redis
 
 from src.dependencies import get_redis_client
@@ -209,6 +209,13 @@ async def get_returns(
     redis: Redis = Depends(get_redis_client),
 ) -> dict[str, dict[str, float]]:
     dfs = await _get_prices_cached(tickers, period, redis)
+
+    if not dfs:
+        # No data could be retrieved for any tickers
+        raise HTTPException(
+            status_code=400,
+            detail="Could not fetch price data for any requested tickers"
+        )
 
     close_df = pd.DataFrame({ticker: df["Close"] for ticker, df in dfs.items()})
     returns_df = compute_returns(close_df)

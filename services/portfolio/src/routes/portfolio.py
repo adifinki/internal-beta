@@ -83,6 +83,14 @@ async def get_portfolio_correlation(
         )
 
     corr_df = compute_correlation(returns)
+    
+    # Validate that correlation matrix doesn't contain NaN values
+    if corr_df.isna().any().any():
+        raise HTTPException(
+            status_code=400,
+            detail="Correlation computation resulted in invalid data - some tickers may have insufficient price history"
+        )
+    
     tickers_ordered = list(corr_df.columns)
     matrix: dict[str, dict[str, float]] = {
         row: {col: float(corr_df.loc[row, col]) for col in tickers_ordered}  # pyright: ignore[reportArgumentType]
