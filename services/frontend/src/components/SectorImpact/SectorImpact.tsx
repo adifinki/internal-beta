@@ -61,6 +61,7 @@ interface Props {
 export default function SectorImpact({ holdings }: Props) {
   const [factor, setFactor] = useState("Technology");
   const [rawMove, setRawMove] = useState(-0.20); // stored as the user-facing value
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const isRate = factor === "Interest Rates";
   const presets = isRate ? RATE_PRESETS : FACTORS.find((f) => f.value === factor)?.group === "macro" ? MACRO_PRESETS : SECTOR_PRESETS;
@@ -96,27 +97,62 @@ export default function SectorImpact({ holdings }: Props) {
       <div className="flex flex-wrap items-end gap-4 mb-5">
         <div>
           <label className="text-[10px] font-medium uppercase tracking-wider text-slate-500 block mb-1">What if</label>
-          <select
-            value={factor}
-            onChange={(e) => {
-              setFactor(e.target.value);
-              // Reset to a sensible default for the new factor type
-              const newIsRate = e.target.value === "Interest Rates";
-              setRawMove(newIsRate ? -100 : -0.20);
-            }}
-            className="rounded-xl bg-white/[0.03] border border-white/[0.04] px-4 py-2 text-sm text-slate-200 outline-none focus:border-white/[0.08]"
-          >
-            <optgroup label="Sectors">
-              {FACTORS.filter((f) => f.group === "sector").map((f) => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
-            </optgroup>
-            <optgroup label="Macro">
-              {FACTORS.filter((f) => f.group === "macro").map((f) => (
-                <option key={f.value} value={f.value}>{f.label}</option>
-              ))}
-            </optgroup>
-          </select>
+          <div className="relative">
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="rounded-xl bg-[#1a1d24] border border-white/[0.04] px-4 py-2 text-sm text-slate-200 outline-none focus:border-white/[0.08] w-full text-left flex items-center justify-between"
+            >
+              <span>{FACTORS.find((f) => f.value === factor)?.label || factor}</span>
+              <span className="text-xs">▼</span>
+            </button>
+            {isDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1 w-64 bg-[#1a1d24] border border-white/[0.04] rounded-xl z-10 max-h-56 overflow-y-auto">
+                <div className="py-1">
+                  <div className="px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-500 bg-white/[0.02]">
+                    Sectors
+                  </div>
+                  {FACTORS.filter((f) => f.group === "sector").map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => {
+                        setFactor(f.value);
+                        setRawMove(-0.20);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        factor === f.value
+                          ? "bg-white/[0.08] text-slate-100"
+                          : "text-slate-300 hover:bg-white/[0.04] hover:text-slate-100"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                  <div className="px-3 py-2 text-[10px] font-medium uppercase tracking-wider text-slate-500 bg-white/[0.02] mt-1">
+                    Macro
+                  </div>
+                  {FACTORS.filter((f) => f.group === "macro").map((f) => (
+                    <button
+                      key={f.value}
+                      onClick={() => {
+                        setFactor(f.value);
+                        const newIsRate = f.value === "Interest Rates";
+                        setRawMove(newIsRate ? -100 : -0.20);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-sm transition-colors ${
+                        factor === f.value
+                          ? "bg-white/[0.08] text-slate-100"
+                          : "text-slate-300 hover:bg-white/[0.04] hover:text-slate-100"
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         <div>
