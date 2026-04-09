@@ -19,6 +19,12 @@ function parseHoldingsFromUrl(): Holding[] {
   });
 }
 
+function parseTabFromUrl(): Tab {
+  const t = new URLSearchParams(window.location.search).get("tab");
+  const valid: Tab[] = ["holdings", "dashboard", "candidate", "screener"];
+  return valid.includes(t as Tab) ? (t as Tab) : "holdings";
+}
+
 const TABS: { id: Tab; label: string; tooltip: string }[] = [
   { id: "holdings", label: "My Portfolio", tooltip: "View your current positions" },
   { id: "dashboard", label: "Analysis", tooltip: "Understand your portfolio" },
@@ -28,6 +34,7 @@ const TABS: { id: Tab; label: string; tooltip: string }[] = [
 
 export default function App() {
   const [holdings, setHoldings] = useState<Holding[]>(() => parseHoldingsFromUrl());
+  const [activeTab, setActiveTab] = useState<Tab>(() => parseTabFromUrl());
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -36,10 +43,10 @@ export default function App() {
     } else {
       params.set("h", holdings.map((h) => `${h.ticker}:${h.shares}`).join(","));
     }
+    params.set("tab", activeTab);
     const qs = params.toString();
     window.history.replaceState({}, "", qs ? `?${qs}` : window.location.pathname);
-  }, [holdings]);
-  const [activeTab, setActiveTab] = useState<Tab>("dashboard");
+  }, [holdings, activeTab]);
   const [age, setAge] = useState<number | null>(null);
   const [candidateTicker, setCandidateTicker] = useState("");
   const [candidateShares, setCandidateShares] = useState<number | null>(null);

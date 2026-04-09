@@ -73,7 +73,7 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
             autoFocus
             type="text"
             value={ticker}
-            onChange={(e) => setTicker(e.target.value)}
+            onChange={(e) => setTicker(e.target.value.toUpperCase())}
             placeholder="Ticker"
             className="w-20 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none transition-colors focus:border-white/[0.1]"
           />
