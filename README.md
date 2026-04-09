@@ -16,7 +16,7 @@ Built with **Python 3.13 (FastAPI)**, **React 19**, and **Real-time Financial Da
 
 ## 📺 Demo
 <p align="center">
-  <video src="assets/demo.mp4" width="100%" controls autoplay loop muted></video>
+  <video src="https://github.com/user-attachments/assets/508c2eb6-c2e9-463e-9838-a8e3b4a800df" width="100%" controls autoplay loop muted></video>
 </p>
 
 ---
