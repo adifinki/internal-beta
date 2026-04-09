@@ -6,7 +6,7 @@ import asyncio
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Body, Depends, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 
 from src.dependencies import get_market_data_client
 from src.domain.concentration import (
@@ -73,6 +73,15 @@ async def get_portfolio_correlation(
     market_data_client: httpx.AsyncClient = Depends(get_market_data_client),
 ) -> CorrelationResponse:
     returns = await fetch_returns(market_data_client, tickers=tickers, period=period)
+
+    # Validate that we have data for all requested tickers
+    if returns.empty or len(returns.columns) != len(tickers):
+        missing_tickers = set(tickers) - set(returns.columns)
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not fetch data for tickers: {list(missing_tickers)}"
+        )
+
     corr_df = compute_correlation(returns)
     tickers_ordered = list(corr_df.columns)
     matrix: dict[str, dict[str, float]] = {
@@ -100,6 +109,13 @@ async def get_portfolio_profile(
         fetch_info_batch(market_data_client, tickers),
         fetch_quality_batch(market_data_client, tickers),
     )
+
+    # Validate that we have returns data
+    if returns.empty:
+        raise HTTPException(
+            status_code=400,
+            detail="Could not fetch returns data for any tickers"
+        )
 
     prices = _prices_from_info(tickers, info_by_ticker)
 
