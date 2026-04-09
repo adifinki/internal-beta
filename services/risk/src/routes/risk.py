@@ -114,6 +114,16 @@ async def analyze_portfolio(
 
     prices = prices_from_info(tickers, info_by_ticker)
     valid = [t for t in tickers if t in prices]
+
+    # Validate that we have at least some valid tickers
+    if not valid:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "detail": "Could not fetch price data for any tickers"
+            },
+        )
+
     weights = portfolio_weights({t: holdings_dict[t] for t in valid}, prices)
     port_val = portfolio_value(holdings_dict, prices)
     daily = portfolio_daily_returns(returns, weights)
