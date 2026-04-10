@@ -125,14 +125,6 @@ export default function Holdings({ holdings }: Props) {
     })),
   });
 
-  if (holdings.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center text-slate-600">
-        Add holdings above to see your portfolio.
-      </div>
-    );
-  }
-
   // Build enriched rows
   const rawRows = holdings.map((h, i) => {
     const info = infoQueries[i]?.data as Record<string, unknown> | undefined;
@@ -141,12 +133,20 @@ export default function Holdings({ holdings }: Props) {
     return { ...h, info, price, value, loading: infoQueries[i]?.isLoading ?? true };
   });
 
-  // Sort by value descending
+  // Sort by value descending — useMemo must be called before any early returns
   const rows = useMemo(
     () => [...rawRows].sort((a, b) => (b.value ?? 0) - (a.value ?? 0)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [JSON.stringify(rawRows.map((r) => [r.ticker, r.value]))],
   );
+
+  if (holdings.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-slate-600">
+        Add holdings above to see your portfolio.
+      </div>
+    );
+  }
 
   const totalValue = rows.reduce((sum, r) => sum + (r.value ?? 0), 0);
   const allLoaded = rows.every((r) => !r.loading);
