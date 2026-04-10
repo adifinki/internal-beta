@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getScreenerStream, getTickerInfo, getBatchBeta } from "../api/client";
 import type { Holding, ScreenerResult } from "../api/client";
@@ -174,19 +174,46 @@ export default function Screener({ onAnalyze, holdings }: Props) {
   const [sectorFilter, setSectorFilter] = useState("All");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ pct: number; phase: string } | null>(null);
-  const progressRef = useRef(setProgress);
-  progressRef.current = setProgress;
+  const liveProgressRef = useRef<{ pct: number; phase: string } | null>(null);
+
+  // Stable callback that keeps liveProgressRef in sync for tab-restore
+  const progressRef = useRef<(v: { pct: number; phase: string } | null) => void>(() => {});
+  progressRef.current = (val) => {
+    liveProgressRef.current = val;
+    setProgress(val);
+  };
+
+  // When returning to the tab mid-stream, restore the last known progress
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        setProgress(liveProgressRef.current);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
   const universes = ["us", "us_extra", "israel", "europe", "emerging"];
+
+  const cacheKey = `screener:${minQuality}:${universes.join(",")}`;
 
   const query = useQuery({
     queryKey: ["screener", minQuality, universes],
     queryFn: () => {
+      // Return cached result immediately if available
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) return Promise.resolve(JSON.parse(cached) as ScreenerResult[]);
+
       progressRef.current({ pct: 0, phase: "info" });
       return getScreenerStream(200, minQuality, universes, (pct, phase) => {
         progressRef.current({ pct, phase });
+      }).then((results) => {
+        sessionStorage.setItem(cacheKey, JSON.stringify(results));
+        return results;
       }).finally(() => progressRef.current(null));
     },
     staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
     placeholderData: (prev) => prev,
   });
 
@@ -336,8 +363,13 @@ export default function Screener({ onAnalyze, holdings }: Props) {
         </div>
 
         {(query.isLoading || progress) && (
-          <div className="flex h-48 flex-col items-center justify-center gap-4">
+          <div className="flex h-56 flex-col items-center justify-center gap-4">
             <div className="w-64">
+              <div className="mb-3 text-center text-xs text-slate-500">
+                This is a complex analysis that can take a few minutes.
+                <br />
+                <span className="text-slate-600">You can switch tabs - it will keep running.</span>
+              </div>
               <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
                 <span>
                   {progress?.phase === "info" ? "Fetching ticker info…" :

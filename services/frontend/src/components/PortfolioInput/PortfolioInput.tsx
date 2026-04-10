@@ -39,7 +39,10 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
 
   return (
     <div className="glass-card">
-      <h2 className="section-title">Portfolio Holdings</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="section-title">Portfolio Holdings</h2>
+        <span className="text-[11px] text-slate-500">Minimum 2 tickers required for portfolio analysis</span>
+      </div>
 
       {/* Compact holdings list + add row in one block */}
       <div className="flex flex-wrap items-center gap-2">
