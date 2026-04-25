@@ -482,10 +482,10 @@ export default function QualityDashboard({
 
       {/* Holdings table */}
       <div className="overflow-x-auto">
-        <table className="w-full table-fixed text-sm">
+        <table className="min-w-[560px] w-full text-sm">
           <thead>
             <tr className="border-b border-white/[0.06] text-[10px] font-medium tracking-wider text-slate-500">
-              <th className="w-1/6 pb-2 text-left font-medium">Ticker</th>
+              <th className="w-20 pb-2 text-left font-medium">Ticker</th>
               <SortTh label="Quality" col="quality" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort}><InfoTooltip metricKey="quality_section" /></SortTh>
               <SortTh label="GARP" col="garp" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort}><InfoTooltip metricKey="garp_section" /></SortTh>
               <SortTh label="Int. Beta" col="beta" sortCol={sortCol} sortDir={sortDir} onToggle={toggleSort}><InfoTooltip metricKey="internal_beta" /></SortTh>

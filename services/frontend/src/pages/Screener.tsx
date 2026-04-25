@@ -352,7 +352,7 @@ export default function Screener({ onAnalyze, holdings }: Props) {
 
         {screener.data && filtered.length > 0 && (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-white/[0.06] text-[10px] font-medium tracking-wider text-slate-500">
                   <th className="w-6 pb-2" />

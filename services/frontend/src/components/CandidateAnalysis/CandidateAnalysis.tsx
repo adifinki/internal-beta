@@ -27,8 +27,8 @@ export default function CandidateAnalysis({ data }: Props) {
         const verdict = betaNum !== null ? betaVerdict(betaNum) : "";
 
         return (
-          <div className={`rounded-2xl border ${style.border} ${style.bg} p-8`} style={{ backdropFilter: "blur(16px)" }}>
-            <div className="flex items-center justify-between">
+          <div className={`rounded-2xl border ${style.border} ${style.bg} p-6`} style={{ backdropFilter: "blur(16px)" }}>
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="metric-label">
                   Internal Beta
@@ -41,8 +41,8 @@ export default function CandidateAnalysis({ data }: Props) {
                   {verdict}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="glass-surface px-5 py-4 text-center">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="glass-surface px-4 py-3 text-center">
                   <div className="metric-label">Correlation</div>
                   <div className="mt-2 text-xl font-medium tracking-tight text-slate-200">
                     {corrNum !== null ? corrNum.toFixed(2) : "--"}
@@ -56,7 +56,7 @@ export default function CandidateAnalysis({ data }: Props) {
                       : ""}
                   </div>
                 </div>
-                <div className="glass-surface px-5 py-4 text-center">
+                <div className="glass-surface px-4 py-3 text-center">
                   <div className="metric-label">MCTR</div>
                   <div className="mt-2 text-xl font-medium tracking-tight text-slate-200">
                     {typeof candidate_metrics.mctr_contribution === "number"
@@ -124,11 +124,11 @@ export default function CandidateAnalysis({ data }: Props) {
             <h2 className="section-title">
               Correlation to Each Holding
             </h2>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
               {Object.entries(
                 candidate_metrics.correlation_to_each as Record<string, number>,
               ).map(([ticker, corr]) => (
-                <div key={ticker} className="glass-surface w-40 p-3 text-center">
+                <div key={ticker} className="glass-surface p-3 text-center">
                   <div className="text-xs text-slate-400">{ticker}</div>
                   <div className="mt-1 text-lg font-bold text-slate-100">
                     {typeof corr === "number" ? corr.toFixed(4) : "--"}

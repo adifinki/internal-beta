@@ -150,7 +150,7 @@ export default function App() {
 
         {/* Tab bar */}
         <div className="mt-8 overflow-x-auto">
-          <div className="flex gap-1 rounded-2xl bg-white/[0.02] p-1 w-fit mx-auto min-w-max">
+          <div className="flex gap-1 rounded-2xl bg-white/[0.02] p-1 w-fit mx-4 min-w-max sm:mx-auto">
             {TABS.map((tab) => (
               <div key={tab.id} className="relative group">
                 <button

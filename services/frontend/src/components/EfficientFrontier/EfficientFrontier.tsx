@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import {
   Scatter,
   XAxis,
@@ -16,9 +16,7 @@ import InfoTooltip from "../InfoTooltip";
 
 interface Props {
   frontier: PortfolioProfile["frontier"];
-  /** Optional: portfolio position after adding a candidate. Rendered as an orange dot. */
   candidatePosition?: { volatility: number; historical_return: number };
-  /** Optional: frontier computed with the candidate stock included in the universe. */
   candidateFrontier?: PortfolioProfile["frontier"];
 }
 
@@ -68,6 +66,7 @@ function HoldingDot({ cx, cy, fill, ticker, labelDy }: HoldingDotProps) {
 }
 
 const CHART_MARGIN = { top: 5, right: 20, bottom: 35, left: 20 };
+const CHART_HEIGHT = 400;
 const TOOLTIP_W = 180;
 
 interface HoverInfo {
@@ -114,42 +113,66 @@ export default function EfficientFrontier({ frontier, candidatePosition, candida
     ? [{ x: +(candidatePosition.volatility * 100).toFixed(2), y: +(candidatePosition.historical_return * 100).toFixed(2) }]
     : [];
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function handleMouseMove(state: any) {
-    if (!state || state.chartX == null) { setHoverInfo(null); return; }
+  // All named data points for hover magnetizing
+  const allPoints = useMemo(() => {
+    const pts: Array<{ name: string; x: number; y: number }> = [];
+    frontierData.forEach((p) => pts.push({ name: "Current Frontier", ...p }));
+    expandedFrontierData?.forEach((p) => pts.push({ name: "Frontier with Candidate", ...p }));
+    holdingData.forEach((h) => pts.push({ name: h.ticker, x: h.x, y: h.y }));
+    if (portfolioData.length) pts.push({ name: candidateData.length ? "Portfolio (without candidate)" : "Portfolio", ...portfolioData[0] });
+    if (candidateData.length) pts.push({ name: "Portfolio (with candidate)", ...candidateData[0] });
+    if (minVarData.length) pts.push({ name: "Min Variance", ...minVarData[0] });
+    return pts;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [frontierData.length, expandedFrontierData?.length, holdingData.length, portfolioData.length, candidateData.length, minVarData.length]);
 
-    const xScale = state.xAxisMap?.["0"]?.scale;
-    const yScale = state.yAxisMap?.["0"]?.scale;
-    if (!xScale || !yScale) { setHoverInfo(null); return; }
+  function handleMouseMove(event: React.MouseEvent<HTMLDivElement>) {
+    if (!containerRef.current || allPoints.length === 0) { setHoverInfo(null); return; }
 
-    const cx = state.chartX as number;
-    const cy = state.chartY as number;
+    const rect = containerRef.current.getBoundingClientRect();
+    const containerW = rect.width;
+
+    // Data extent across all points
+    const xs = allPoints.map((p) => p.x);
+    const ys = allPoints.map((p) => p.y);
+    const xMin = Math.min(...xs), xMax = Math.max(...xs);
+    const yMin = Math.min(...ys), yMax = Math.max(...ys);
+    // Add ~5% padding on each side (matches recharts auto domain)
+    const xPad = (xMax - xMin) * 0.05 || 1;
+    const yPad = (yMax - yMin) * 0.05 || 1;
+    const xLo = xMin - xPad, xHi = xMax + xPad;
+    const yLo = yMin - yPad, yHi = yMax + yPad;
+
+    // Chart area pixel bounds within the container
+    const left = CHART_MARGIN.left;
+    const right = containerW - CHART_MARGIN.right;
+    const top = CHART_MARGIN.top;
+    const bottom = CHART_HEIGHT - CHART_MARGIN.bottom;
+
+    const toPixelX = (v: number) => left + (v - xLo) / (xHi - xLo) * (right - left);
+    const toPixelY = (v: number) => bottom - (v - yLo) / (yHi - yLo) * (bottom - top);
+
+    // Cursor relative to container
+    const cx = event.clientX - rect.left;
+    const cy = event.clientY - rect.top;
 
     let minDist = Infinity;
     let best: HoverInfo | null = null;
 
-    const check = (pts: { x: number; y: number }[], name: string) => {
-      for (const pt of pts) {
-        const px = xScale(pt.x) as number;
-        const py = yScale(pt.y) as number;
-        const d = (cx - px) ** 2 + (cy - py) ** 2;
-        if (d < minDist) {
-          minDist = d;
-          best = { name, x: pt.x, y: pt.y, px, py };
-        }
+    for (const pt of allPoints) {
+      const px = toPixelX(pt.x);
+      const py = toPixelY(pt.y);
+      const d = (cx - px) ** 2 + (cy - py) ** 2;
+      if (d < minDist) {
+        minDist = d;
+        best = { name: pt.name, x: pt.x, y: pt.y, px, py };
       }
-    };
+    }
 
-    check(frontierData, "Current Frontier");
-    if (expandedFrontierData) check(expandedFrontierData, "Frontier with Candidate");
-    holdingData.forEach((h) => check([{ x: h.x, y: h.y }], h.ticker));
-    if (portfolioData.length) check(portfolioData, candidateData.length ? "Portfolio (without candidate)" : "Portfolio");
-    if (candidateData.length) check(candidateData, "Portfolio (with candidate)");
-    if (minVarData.length) check(minVarData, "Min Variance");
-
-    setHoverInfo(minDist < 1600 ? best : null); // 40px threshold
+    setHoverInfo(minDist < 1600 ? best : null); // 40px radius
   }
 
+  // Tooltip positioning: clamp to stay on screen
   const tooltipLeft = hoverInfo
     ? Math.max(4, Math.min(hoverInfo.px - TOOLTIP_W / 2, (containerRef.current?.offsetWidth ?? 600) - TOOLTIP_W - 4))
     : 0;
@@ -161,13 +184,14 @@ export default function EfficientFrontier({ frontier, candidatePosition, candida
         Efficient Frontier
         <InfoTooltip metricKey="efficient_frontier" />
       </h2>
-      <div ref={containerRef} className="relative">
-        <ResponsiveContainer width="100%" height={400}>
-          <ComposedChart
-            margin={CHART_MARGIN}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={() => setHoverInfo(null)}
-          >
+      <div
+        ref={containerRef}
+        className="relative"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={() => setHoverInfo(null)}
+      >
+        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+          <ComposedChart margin={CHART_MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
             <XAxis type="number" dataKey="x" domain={["auto", "auto"]} tick={{ fill: "#94a3b8", fontSize: 11 }}>
               <Label value="Volatility (%)" position="bottom" offset={10} style={{ fill: "#94a3b8", fontSize: 11 }} />
@@ -175,7 +199,7 @@ export default function EfficientFrontier({ frontier, candidatePosition, candida
             <YAxis type="number" dataKey="y" domain={["auto", "auto"]} tick={{ fill: "#94a3b8", fontSize: 11 }}>
               <Label value="Return (%)" angle={-90} position="insideLeft" offset={-5} style={{ fill: "#94a3b8", fontSize: 11 }} />
             </YAxis>
-            <Tooltip content={() => null} cursor={{ stroke: "rgba(255,255,255,0.08)", strokeDasharray: "3 3" }} />
+            <Tooltip content={() => null} cursor={false} />
             <Legend
               verticalAlign="top"
               align="center"
@@ -250,31 +274,46 @@ export default function EfficientFrontier({ frontier, candidatePosition, candida
           </ComposedChart>
         </ResponsiveContainer>
 
+        {/* Hover highlight ring + tooltip */}
         {hoverInfo && (
-          <div
-            style={{
-              position: "absolute",
-              left: tooltipLeft,
-              top: tooltipAbove ? hoverInfo.py - 12 : hoverInfo.py + 12,
-              transform: tooltipAbove ? "translateY(-100%)" : undefined,
-              width: TOOLTIP_W,
-              pointerEvents: "none",
-              zIndex: 50,
-              backgroundColor: "#111318",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 8,
-              padding: "8px 12px",
-              fontSize: 12,
-            }}
-          >
-            <div style={{ color: "#e2e8f0", fontWeight: 500, marginBottom: 4 }}>{hoverInfo.name}</div>
-            <div style={{ color: "#94a3b8" }}>
-              Volatility: <span style={{ color: "#e2e8f0", fontFamily: "monospace" }}>{hoverInfo.x.toFixed(2)}%</span>
+          <>
+            <svg
+              style={{ position: "absolute", left: 0, top: 0, width: "100%", height: CHART_HEIGHT, pointerEvents: "none" }}
+            >
+              <circle
+                cx={hoverInfo.px}
+                cy={hoverInfo.py}
+                r={9}
+                fill="none"
+                stroke="rgba(255,255,255,0.35)"
+                strokeWidth={2}
+              />
+            </svg>
+            <div
+              style={{
+                position: "absolute",
+                left: tooltipLeft,
+                top: tooltipAbove ? hoverInfo.py - 12 : hoverInfo.py + 12,
+                transform: tooltipAbove ? "translateY(-100%)" : undefined,
+                width: TOOLTIP_W,
+                pointerEvents: "none",
+                zIndex: 50,
+                backgroundColor: "#111318",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                fontSize: 12,
+              }}
+            >
+              <div style={{ color: "#e2e8f0", fontWeight: 500, marginBottom: 4 }}>{hoverInfo.name}</div>
+              <div style={{ color: "#94a3b8" }}>
+                Volatility: <span style={{ color: "#e2e8f0", fontFamily: "monospace" }}>{hoverInfo.x.toFixed(2)}%</span>
+              </div>
+              <div style={{ color: "#94a3b8" }}>
+                Return: <span style={{ color: "#e2e8f0", fontFamily: "monospace" }}>{hoverInfo.y.toFixed(2)}%</span>
+              </div>
             </div>
-            <div style={{ color: "#94a3b8" }}>
-              Return: <span style={{ color: "#e2e8f0", fontFamily: "monospace" }}>{hoverInfo.y.toFixed(2)}%</span>
-            </div>
-          </div>
+          </>
         )}
       </div>
     </div>
