@@ -41,44 +41,16 @@ function Category({ title, before, after }: { title: string; before: Record<stri
 }
 
 export default function ConcentrationDelta({ before, after }: Props) {
-  const hhi = { b: before.hhi * 10000, a: after.hhi * 10000 };
-  const top = { b: before.top_holding_pct * 100, a: after.top_holding_pct * 100 };
-
   return (
     <div className="glass-card">
       <h2 className="section-title">
         Concentration Impact <InfoTooltip metricKey="concentration_section" />
       </h2>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Category title="Sectors" before={before.sectors} after={after.sectors} />
         <Category title="Countries" before={before.countries} after={after.countries} />
         <Category title="Currencies" before={before.currencies} after={after.currencies} />
-      </div>
-
-      <div className="mt-4 flex gap-4">
-        <div className="glass-surface flex-1 flex items-center justify-between">
-          <span className="metric-label">HHI <InfoTooltip metricKey="hhi" /></span>
-          <span className="font-mono text-xs">
-            <span className="text-slate-500">{hhi.b.toFixed(0)}</span>
-            <span className="text-slate-600 mx-1.5">→</span>
-            <span className="text-slate-200">{hhi.a.toFixed(0)}</span>
-            <span className={`ml-2 ${hhi.a - hhi.b < -50 ? "text-emerald-400" : hhi.a - hhi.b > 50 ? "text-amber-400" : "text-slate-600"}`}>
-              {hhi.a - hhi.b > 0 ? "+" : ""}{(hhi.a - hhi.b).toFixed(0)}
-            </span>
-          </span>
-        </div>
-        <div className="glass-surface flex-1 flex items-center justify-between">
-          <span className="metric-label">Top Holding <InfoTooltip metricKey="top_holding" /></span>
-          <span className="font-mono text-xs">
-            <span className="text-slate-500">{top.b.toFixed(1)}%</span>
-            <span className="text-slate-600 mx-1.5">→</span>
-            <span className="text-slate-200">{top.a.toFixed(1)}%</span>
-            <span className={`ml-2 ${top.a - top.b < -1 ? "text-emerald-400" : top.a - top.b > 1 ? "text-amber-400" : "text-slate-600"}`}>
-              {top.a - top.b > 0 ? "+" : ""}{(top.a - top.b).toFixed(1)}%
-            </span>
-          </span>
-        </div>
       </div>
     </div>
   );

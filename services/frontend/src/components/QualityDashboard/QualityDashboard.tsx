@@ -385,7 +385,10 @@ function BadgeWithTooltip({
   function show() {
     if (!ref.current) return;
     const r = ref.current.getBoundingClientRect();
-    setPos({ x: r.left + r.width / 2, y: r.top - 8 });
+    const TOOLTIP_W = 240; // w-60
+    const rawX = r.left + r.width / 2;
+    const clampedX = Math.max(TOOLTIP_W / 2 + 8, Math.min(rawX, window.innerWidth - TOOLTIP_W / 2 - 8));
+    setPos({ x: clampedX, y: r.top - 8 });
   }
 
   return (
@@ -401,10 +404,11 @@ function BadgeWithTooltip({
       </span>
       {pos && (
         <span
-          className="pointer-events-none fixed z-50 w-60 -translate-x-1/2 -translate-y-full rounded-xl px-3 py-2 text-left text-[11px] leading-relaxed text-slate-300 shadow-xl"
+          className="pointer-events-none fixed z-50 w-60 rounded-xl px-3 py-2 text-left text-[11px] leading-relaxed text-slate-300 shadow-xl"
           style={{
             left: pos.x,
             top: pos.y,
+            transform: "translateY(-100%) translateX(-50%)",
             background: "#1a1d24",
             border: "1px solid rgba(255,255,255,0.1)",
           }}

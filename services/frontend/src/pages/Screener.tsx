@@ -1,9 +1,10 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getScreenerStream, getTickerInfo, getBatchBeta } from "../api/client";
+import { getTickerInfo, getBatchBeta } from "../api/client";
 import type { Holding, ScreenerResult } from "../api/client";
 import InfoTooltip from "../components/InfoTooltip";
 import { fmtDollar, fmtMultiple, fmtNum, fmtPct } from "../utils/format";
+import { useScreener } from "../contexts/ScreenerContext";
 
 type SortKey = keyof Pick<
   ScreenerResult,
@@ -29,17 +30,12 @@ function ScoreBar({ value }: { value: number }) {
   );
 }
 
-// Cast unknown yfinance field to number | null for format utilities.
 function n(v: unknown): number | null {
   if (v == null) return null;
   const x = Number(v);
   return isFinite(x) ? x : null;
 }
 
-// Absolute portfolio fit score (0–100).
-// 40 pts quality, 30 pts GARP, 30 pts diversification (lower beta = better).
-// Uses absolute thresholds so fit reflects the stock's actual merit vs the
-// user's portfolio, not just how it compares to other screener candidates.
 function computePortfolioFit(quality: number, garp: number, internalBeta: number | undefined): number {
   const beta = internalBeta ?? 1;
   const qScore = quality >= 80 ? 40 : quality >= 65 ? 32 : quality >= 50 ? 20 : quality >= 35 ? 10 : 0;
@@ -91,7 +87,6 @@ function TickerDetail({ ticker, onAnalyze }: { ticker: string; onAnalyze: (t: st
   return (
     <td colSpan={99} className="p-0">
       <div className="px-4 pb-5 pt-4" style={{ maxWidth: 0, minWidth: "100%" }}>
-        {/* Header row */}
         <div className="mb-3 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <span className="text-sm font-semibold text-slate-100">{name}</span>
@@ -110,7 +105,6 @@ function TickerDetail({ ticker, onAnalyze }: { ticker: string; onAnalyze: (t: st
           </button>
         </div>
 
-        {/* Stats grouped by category */}
         <div className="space-y-3">
           <StatGroup
             title="Price & Market"
@@ -167,59 +161,21 @@ const TOOLTIP_KEYS: Partial<Record<SortKey, string>> = {
 };
 
 export default function Screener({ onAnalyze, holdings }: Props) {
+  const screener = useScreener();
   const [sortKey, setSortKey] = useState<SortKey>("garp_score");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [minQuality, setMinQuality] = useState(80);
   const [search, setSearch] = useState("");
   const [sectorFilter, setSectorFilter] = useState("All");
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{ pct: number; phase: string } | null>(null);
-  const liveProgressRef = useRef<{ pct: number; phase: string } | null>(null);
 
-  // Stable callback that keeps liveProgressRef in sync for tab-restore
-  const progressRef = useRef<(v: { pct: number; phase: string } | null) => void>(() => {});
-  progressRef.current = (val) => {
-    liveProgressRef.current = val;
-    setProgress(val);
-  };
-
-  // When returning to the tab mid-stream, restore the last known progress
+  // Start the screener fetch when user visits this tab
   useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        setProgress(liveProgressRef.current);
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => document.removeEventListener("visibilitychange", onVisibility);
+    screener.start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const universes = ["us", "us_extra", "israel", "europe", "emerging"];
 
-  const cacheKey = `screener:${minQuality}:${universes.join(",")}`;
-
-  const query = useQuery({
-    queryKey: ["screener", minQuality, universes],
-    queryFn: () => {
-      // Return cached result immediately if available
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) return Promise.resolve(JSON.parse(cached) as ScreenerResult[]);
-
-      progressRef.current({ pct: 0, phase: "info" });
-      return getScreenerStream(200, minQuality, universes, (pct, phase) => {
-        progressRef.current({ pct, phase });
-      }).then((results) => {
-        sessionStorage.setItem(cacheKey, JSON.stringify(results));
-        return results;
-      }).finally(() => progressRef.current(null));
-    },
-    staleTime: 1000 * 60 * 5,
-    refetchOnWindowFocus: false,
-    placeholderData: (prev) => prev,
-  });
-
-  // Fetch internal beta for all screened tickers against the user's portfolio
   const hasPortfolio = holdings.length >= 1;
-  const screenerTickers = (query.data ?? []).map((r) => r.ticker);
+  const screenerTickers = (screener.data ?? []).map((r) => r.ticker);
   const betaQuery = useQuery({
     queryKey: ["batchBeta", holdings, screenerTickers],
     queryFn: () => getBatchBeta(holdings, screenerTickers),
@@ -231,21 +187,21 @@ export default function Screener({ onAnalyze, holdings }: Props) {
   const portfolioFitMap = useMemo(() => {
     if (!hasPortfolio) return {} as Record<string, number>;
     return Object.fromEntries(
-      (query.data ?? []).map((r) => [
+      (screener.data ?? []).map((r) => [
         r.ticker,
         computePortfolioFit(r.quality_score, r.garp_score, betaMap[r.ticker]?.internal_beta),
       ]),
     );
-  }, [query.data, betaMap, hasPortfolio]);
+  }, [screener.data, betaMap, hasPortfolio]);
 
-  const sectors = ["All", ...Array.from(new Set((query.data ?? []).map((r) => r.sector ?? "Unknown"))).sort()];
+  const sectors = ["All", ...Array.from(new Set((screener.data ?? []).map((r) => r.sector ?? "Unknown"))).sort()];
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "desc" ? "asc" : "desc"));
     else { setSortKey(key); setSortDir(key === "internal_beta" ? "asc" : "desc"); }
   }
 
-  const filtered = [...(query.data ?? [])]
+  const filtered = [...(screener.data ?? [])]
     .filter((r) => {
       const matchSearch = r.ticker.includes(search.toUpperCase());
       const matchSector = sectorFilter === "All" || r.sector === sectorFilter;
@@ -289,8 +245,7 @@ export default function Screener({ onAnalyze, holdings }: Props) {
   return (
     <div className="space-y-4">
       {/* Controls */}
-      <div className="flex items-center gap-6">
-        {/* Search */}
+      <div className="flex flex-wrap items-center gap-4">
         <input
           type="text"
           value={search}
@@ -299,7 +254,6 @@ export default function Screener({ onAnalyze, holdings }: Props) {
           className="w-40 rounded-xl bg-white/[0.03] border border-white/[0.04] px-4 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none transition-all duration-200 focus:border-white/[0.08]"
         />
 
-        {/* Sector */}
         <select
           value={sectorFilter}
           onChange={(e) => setSectorFilter(e.target.value)}
@@ -308,16 +262,14 @@ export default function Screener({ onAnalyze, holdings }: Props) {
           {sectors.map((s) => <option key={s}>{s}</option>)}
         </select>
 
-
-        {/* Min quality */}
         <div className="flex items-center gap-2">
           <span className="text-[11px] text-slate-600">Min quality</span>
           <input
             type="number"
             min={0}
             max={100}
-            value={minQuality}
-            onChange={(e) => setMinQuality(Number(e.target.value))}
+            value={screener.minQuality}
+            onChange={(e) => screener.setMinQuality(Number(e.target.value))}
             className="w-16 rounded-xl bg-white/[0.03] border border-white/[0.04] px-3 py-2 text-sm text-slate-200 outline-none transition-all duration-200 focus:border-white/[0.08] text-center font-mono"
           />
         </div>
@@ -331,9 +283,9 @@ export default function Screener({ onAnalyze, holdings }: Props) {
             <InfoTooltip metricKey="cheap_quality_screener" />
           </h2>
           <div className="flex items-center gap-3">
-            {query.data && (
+            {screener.data && (
               <span className="text-xs text-slate-500">
-                {filtered.length} of {query.data.length} results
+                {filtered.length} of {screener.data.length} results
               </span>
             )}
             {filtered.length > 0 && (
@@ -362,45 +314,43 @@ export default function Screener({ onAnalyze, holdings }: Props) {
           </div>
         </div>
 
-        {(query.isLoading || progress) && (
+        {(screener.isLoading || screener.progress) && (
           <div className="flex h-56 flex-col items-center justify-center gap-4">
             <div className="w-64">
               <div className="mb-3 text-center text-xs text-slate-500">
                 This is a complex analysis that can take a few minutes.
-                <br />
-                <span className="text-slate-600">You can switch tabs - it will keep running.</span>
               </div>
               <div className="mb-2 flex items-center justify-between text-xs text-slate-500">
                 <span>
-                  {progress?.phase === "info" ? "Fetching ticker info…" :
-                   progress?.phase === "quality" ? "Scoring fundamentals…" :
-                   progress?.phase === "done" ? "Done" : "Loading…"}
+                  {screener.progress?.phase === "info" ? "Fetching ticker info…" :
+                   screener.progress?.phase === "quality" ? "Scoring fundamentals…" :
+                   screener.progress?.phase === "done" ? "Done" : "Loading…"}
                 </span>
-                <span className="font-mono">{progress?.pct ?? 0}%</span>
+                <span className="font-mono">{screener.progress?.pct ?? 0}%</span>
               </div>
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.06]">
                 <div
                   className="h-full rounded-full bg-blue-500/60 transition-all duration-500 ease-out"
-                  style={{ width: `${progress?.pct ?? 0}%` }}
+                  style={{ width: `${screener.progress?.pct ?? 0}%` }}
                 />
               </div>
             </div>
           </div>
         )}
 
-        {query.error && (
+        {screener.error && (
           <div className="flex h-48 items-center justify-center text-sm text-red-400">
             Failed to load screener results.
           </div>
         )}
 
-        {query.data && filtered.length === 0 && (
+        {screener.data && filtered.length === 0 && (
           <div className="flex h-48 items-center justify-center text-sm text-slate-500">
             No results: adjust your filters.
           </div>
         )}
 
-        {query.data && filtered.length > 0 && (
+        {screener.data && filtered.length > 0 && (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -429,7 +379,6 @@ export default function Screener({ onAnalyze, holdings }: Props) {
                         }`}
                         onClick={() => setExpandedTicker(isExpanded ? null : row.ticker)}
                       >
-                        {/* Expand chevron */}
                         <td className="py-2.5 pl-1 text-slate-500">
                           <span
                             className="inline-block transition-transform duration-150"

@@ -143,7 +143,7 @@ const TOOLTIPS: Record<string, { desc: string; range: string; use: string }> = {
   portfolio_fit: {
     desc: "How this holding fits your portfolio, combining quality, GARP, risk contribution (MCTR), weight, and correlation to other holdings.",
     range: "Core (high quality + good value), Diversifier (low risk contribution), Overweight (too much weight/risk), Redundant (correlated cluster), Trim (low quality + high risk).",
-    use: "Core = keep. Diversifier = valuable for risk reduction. Overweight = consider reducing. Redundant = overlapping exposure. Trim = sell candidate. Hover for details.",
+    use: "Core = keep. Diversifier = valuable for risk reduction. Overweight = consider reducing. Redundant = overlapping exposure. Trim = sell candidate.",
   },
   stress_section: {
     desc: "How your portfolio would have performed during real historical market crashes.",

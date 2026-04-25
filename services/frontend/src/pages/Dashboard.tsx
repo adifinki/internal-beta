@@ -8,23 +8,21 @@ import ConcentrationChart from "../components/ConcentrationChart/ConcentrationCh
 import QualityDashboard from "../components/QualityDashboard/QualityDashboard";
 import MCTRBar from "../components/MCTRBar/MCTRBar";
 import DrawdownChart from "../components/DrawdownChart/DrawdownChart";
-import Recommendations from "../components/Recommendations/Recommendations";
 import SectorImpact from "../components/SectorImpact/SectorImpact";
 import { fmtMetric, titleize } from "../utils/format";
 import { RISK_LABELS } from "../utils/labels";
 
 interface Props {
   holdings: Holding[];
-  age: number | null;
 }
 
-export default function Dashboard({ holdings, age }: Props) {
+export default function Dashboard({ holdings }: Props) {
   const tickers = holdings.map((h) => h.ticker);
   const enabled = holdings.length >= 2;
 
   const analysisQuery = useQuery({
-    queryKey: ["analyzePortfolio", holdings, age],
-    queryFn: () => analyzePortfolio(holdings, "5y", age ?? undefined),
+    queryKey: ["analyzePortfolio", holdings],
+    queryFn: () => analyzePortfolio(holdings, "5y"),
     enabled,
   });
 
@@ -85,7 +83,7 @@ export default function Dashboard({ holdings, age }: Props) {
 
       {/* Top metrics row */}
       {analysis && (
-        <div className="grid grid-cols-3 gap-4 stagger-children">
+        <div className="grid grid-cols-1 gap-4 stagger-children sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(analysis.risk)
             .filter(([key]) => !key.includes("drawdown") && key !== "recovery_days" && key !== "sortino_reliable" && key !== "var_95" && key !== "cvar_95" && key !== "sortino")
             .map(([key, value]) => (
@@ -103,13 +101,13 @@ export default function Dashboard({ holdings, age }: Props) {
       )}
 
       {/* MCTR + Correlation row */}
-      <div className="grid grid-cols-2 gap-6 stagger-children">
+      <div className="grid grid-cols-1 gap-6 stagger-children sm:grid-cols-2">
         {analysis && <MCTRBar mctr={analysis.mctr} />}
         {correlation && <CorrelationMatrix data={correlation} />}
       </div>
 
       {/* Efficient Frontier + Concentration row */}
-      <div className="grid grid-cols-2 gap-6 stagger-children">
+      <div className="grid grid-cols-1 gap-6 stagger-children sm:grid-cols-2">
         {profile && <EfficientFrontier frontier={profile.frontier} />}
         {profile && <ConcentrationChart concentration={profile.concentration} />}
       </div>
@@ -140,11 +138,6 @@ export default function Dashboard({ holdings, age }: Props) {
 
       {/* Sector scenario — "What if Technology drops 20%?" */}
       <SectorImpact holdings={holdings} />
-
-      {/* Recommendations — Bogle + Buffett principles applied to this portfolio */}
-      {(analysis?.recommendations?.length ?? 0) > 0 && (
-        <Recommendations recommendations={analysis!.recommendations} />
-      )}
     </div>
   );
 }

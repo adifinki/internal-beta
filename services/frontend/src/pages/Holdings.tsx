@@ -164,7 +164,7 @@ export default function Holdings({ holdings }: Props) {
     <div className="space-y-6">
       {/* Summary card with donut */}
       <div className="glass-card">
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
           {/* Donut */}
           <div className="shrink-0">
             {allLoaded && totalValue > 0 ? (
@@ -180,11 +180,11 @@ export default function Holdings({ holdings }: Props) {
           </div>
 
           {/* Legend: left column = 1..half, right column = half+1..N */}
-          <div className="flex gap-8">
-            <div className="mb-3 text-[10px] font-medium uppercase tracking-wider text-slate-500">
+          <div className="flex flex-col gap-3">
+            <div className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
               {holdings.length} holding{holdings.length !== 1 ? "s" : ""}
             </div>
-            <div className="flex gap-20">
+            <div className="flex gap-8 sm:gap-20">
               {[slices.slice(0, Math.ceil(slices.length / 2)), slices.slice(Math.ceil(slices.length / 2))].map((col, ci) => (
                 <div key={ci} className="flex flex-col gap-1.5">
                   {col.map((s, si) => {

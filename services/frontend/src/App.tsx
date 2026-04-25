@@ -10,7 +10,6 @@ const LS_KEY = "portfolio_saved";
 
 interface SavedState {
   holdings: Holding[];
-  age: number | null;
 }
 
 function loadFromLocalStorage(): SavedState | null {
@@ -68,13 +67,13 @@ export default function App() {
     const qs = params.toString();
     window.history.replaceState({}, "", qs ? `?${qs}` : window.location.pathname);
   }, [holdings, activeTab]);
-  const [age, setAge] = useState<number | null>(() => loadFromLocalStorage()?.age ?? null);
+
   const [hasSaved, setHasSaved] = useState(() => localStorage.getItem(LS_KEY) !== null);
   const [candidateTicker, setCandidateTicker] = useState("");
   const [candidateShares, setCandidateShares] = useState<number | null>(null);
 
   function saveToLocalStorage() {
-    const state: SavedState = { holdings, age };
+    const state: SavedState = { holdings };
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     setHasSaved(true);
   }
@@ -86,19 +85,19 @@ export default function App() {
 
   function handleAnalyzeTicker(ticker: string) {
     setCandidateTicker(ticker);
-    setCandidateShares(null); // reset to optimal on new ticker
+    setCandidateShares(null);
     setActiveTab("candidate");
   }
 
   const handleOptimalComputed = useCallback(
-    (shares: number) => { if (candidateShares === null) setCandidateShares(shares); },
+    (shares: number) => { if (candidateShares === null) setCandidateShares(Math.max(1, Math.round(shares))); },
     [candidateShares]
   );
 
   return (
     <div className="min-h-screen bg-[#111318] text-slate-300">
       {/* Header */}
-      <header className="border-b border-white/[0.03] px-8 py-5 flex items-center justify-between">
+      <header className="border-b border-white/[0.03] px-4 py-4 flex items-center justify-between sm:px-8 sm:py-5">
         <h1 className="flex items-center gap-3">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="9.5" cy="12" r="6.5" stroke="rgba(148,163,184,0.2)" strokeWidth="1" />
@@ -120,13 +119,13 @@ export default function App() {
                 <rect x="4" y="8" width="5" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
                 <rect x="4" y="2" width="4" height="3" rx="0.5" stroke="currentColor" strokeWidth="1.2"/>
               </svg>
-              Save to local storage
+              Save
             </button>
             <div className="pointer-events-none absolute right-0 top-full mt-2 w-52 rounded-lg bg-[#1a1d24] border border-white/[0.08] px-3 py-2 text-[11px] leading-relaxed text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-              Saves your current portfolio holdings and age to this browser's local storage so they load automatically next visit.
+              Saves your current portfolio holdings to this browser's local storage so they load automatically next visit.
             </div>
           </div>
-          {/* Delete from local storage button — only shown when saved data exists */}
+          {/* Delete from local storage button */}
           {hasSaved && (
             <div className="relative group">
               <button
@@ -145,55 +144,38 @@ export default function App() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-8 py-8">
-        {/* Portfolio Input + Age */}
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <PortfolioInput holdings={holdings} onChange={setHoldings} />
-          </div>
-          <div className="glass-card shrink-0">
-            <label className="text-[10px] font-medium tracking-wider text-slate-500 uppercase block mb-1.5">Age</label>
-            <input
-              type="number"
-              min={18}
-              max={99}
-              value={age ?? ""}
-              onChange={(e) => {
-                const v = parseInt(e.target.value);
-                setAge(isNaN(v) || v < 1 ? null : v);
-              }}
-              placeholder="—"
-              className="w-16 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-center text-xs text-slate-200 placeholder-slate-600 outline-none transition-colors focus:border-white/[0.1] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            />
-          </div>
-        </div>
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
+        {/* Portfolio Input */}
+        <PortfolioInput holdings={holdings} onChange={setHoldings} />
 
         {/* Tab bar */}
-        <div className="mt-8 flex gap-1 rounded-2xl bg-white/[0.02] p-1 w-fit mx-auto">
-          {TABS.map((tab) => (
-            <div key={tab.id} className="relative group">
-              <button
-                onClick={() => setActiveTab(tab.id)}
-                className={`px-5 py-2 text-xs font-medium transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? "rounded-xl bg-white/[0.06] text-slate-200"
-                    : "rounded-xl text-slate-600 hover:text-slate-400"
-                }`}
-              >
-                {tab.label}
-              </button>
-              <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 rounded-lg bg-[#1a1d24] border border-white/[0.08] px-3 py-2 text-[11px] leading-relaxed text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-                {tab.tooltip}
+        <div className="mt-8 overflow-x-auto">
+          <div className="flex gap-1 rounded-2xl bg-white/[0.02] p-1 w-fit mx-auto min-w-max">
+            {TABS.map((tab) => (
+              <div key={tab.id} className="relative group">
+                <button
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-5 py-2 text-xs font-medium transition-all duration-300 ${
+                    activeTab === tab.id
+                      ? "rounded-xl bg-white/[0.06] text-slate-200"
+                      : "rounded-xl text-slate-600 hover:text-slate-400"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+                <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 rounded-lg bg-[#1a1d24] border border-white/[0.08] px-3 py-2 text-[11px] leading-relaxed text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  {tab.tooltip}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Tab content */}
         <div className="mt-8 fade-in">
           {activeTab === "holdings" && <Holdings holdings={holdings} />}
 
-          {activeTab === "dashboard" && <Dashboard holdings={holdings} age={age} />}
+          {activeTab === "dashboard" && <Dashboard holdings={holdings} />}
 
           {activeTab === "screener" && (
             <Screener onAnalyze={handleAnalyzeTicker} holdings={holdings} />
@@ -204,7 +186,7 @@ export default function App() {
               {/* Candidate input */}
               <div className="glass-card">
                 <h2 className="section-title">Evaluate a Stock</h2>
-                <div className="flex items-end gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                   <div className="flex-1">
                     <label className="metric-label mb-1.5 block">Ticker</label>
                     <input
@@ -215,15 +197,15 @@ export default function App() {
                       className="w-full rounded-xl bg-white/[0.03] border border-white/[0.04] px-4 py-2.5 text-sm text-slate-200 placeholder-slate-600 outline-none transition-all duration-200 focus:border-white/[0.08]"
                     />
                   </div>
-                  <div className="w-36">
+                  <div className="w-full sm:w-36">
                     <label className="metric-label mb-1.5 block">Shares to Add</label>
                     <input
                       type="number"
                       min={0}
-                      step={0.01}
+                      step={1}
                       value={candidateShares ?? ""}
                       onChange={(e) => {
-                        const v = parseFloat(e.target.value);
+                        const v = parseInt(e.target.value);
                         setCandidateShares(isNaN(v) || v <= 0 ? null : v);
                       }}
                       placeholder="auto"
