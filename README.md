@@ -12,14 +12,6 @@
 
 Built with **Python 3.13 (FastAPI)**, **React 19**, and **Real-time Financial Data**, it identifies if a new stock is a true diversifier or just adding hidden concentration to your wealth.
 
----
-
-## 📺 Demo
-<p align="center">
-  <video src="https://github.com/user-attachments/assets/508c2eb6-c2e9-463e-9838-a8e3b4a800df" width="100%" controls autoplay loop muted></video>
-</p>
-
----
 
 ## ✨ Why Internal Beta?
 
