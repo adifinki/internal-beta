@@ -90,6 +90,13 @@ export interface ScreenerResult {
   sector: string | null;
 }
 
+export interface TickerSearchResult {
+  symbol: string;
+  name: string;
+  exchange: string;
+  type: string;
+}
+
 // --- API calls ---
 
 export async function analyzePortfolio(portfolio: Holding[], period = "5y", age?: number): Promise<PortfolioAnalysis> {
@@ -239,4 +246,9 @@ export async function getRecommendations(holdings: Holding[], period = "5y"): Pr
     body: JSON.stringify({ portfolio: holdings, period }),
   });
   return data.recommendations;
+}
+
+export async function searchTickers(q: string, signal?: AbortSignal): Promise<TickerSearchResult[]> {
+  const params = new URLSearchParams({ q, limit: "5" });
+  return fetchJson<TickerSearchResult[]>(`${BASE}/api/market-data/tickers/search?${params}`, { signal });
 }
