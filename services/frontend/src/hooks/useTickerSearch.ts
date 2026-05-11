@@ -8,12 +8,11 @@ export function useTickerSearch(query: string) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    // Clear previous timer
     if (timerRef.current) clearTimeout(timerRef.current);
-    // Abort previous in-flight request
     if (abortRef.current) abortRef.current.abort();
 
-    if (query.trim().length < 2) {
+    const trimmedQuery = query.trim();
+    if (trimmedQuery.length < 2) {
       setResults([]);
       setLoading(false);
       return;
@@ -26,11 +25,12 @@ export function useTickerSearch(query: string) {
       abortRef.current = controller;
 
       try {
-        const data = await searchTickers(query.trim(), controller.signal);
+        const data = await searchTickers(trimmedQuery, controller.signal);
         setResults(data);
-      } catch {
-        // AbortError (user typed more) or network error — both are silent
-        setResults([]);
+      } catch (err) {
+        if (!(err instanceof Error && err.name === "AbortError")) {
+          setResults([]);
+        }
       } finally {
         setLoading(false);
       }
