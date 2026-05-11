@@ -22,13 +22,14 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
   const { results } = useTickerSearch(query);
 
   useEffect(() => {
+    if (selectedTicker) return;
     if (results.length > 0) {
       setDropdownOpen(true);
       setActiveIndex(0);
     } else {
       setDropdownOpen(false);
     }
-  }, [results]);
+  }, [results, selectedTicker]);
 
   function selectResult(symbol: string) {
     setSelectedTicker(symbol);
@@ -76,12 +77,10 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
       if (results[activeIndex]) selectResult(results[activeIndex].symbol);
     } else if (e.key === "Escape") {
       setDropdownOpen(false);
-      setQuery("");
-      setSelectedTicker("");
     } else if (e.key === "Tab") {
-      if (results[0]) {
+      if (results[activeIndex]) {
         e.preventDefault();
-        selectResult(results[0].symbol);
+        selectResult(results[activeIndex].symbol);
       }
     }
   }
@@ -182,7 +181,12 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
               setSelectedTicker("");
             }}
             onKeyDown={handleSearchKeyDown}
-            onFocus={() => results.length > 0 && setDropdownOpen(true)}
+            onFocus={() => {
+              if (results.length > 0) {
+                setDropdownOpen(true);
+                setActiveIndex(0);
+              }
+            }}
             placeholder="Search ticker…"
             className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none transition-colors focus:border-white/[0.1]"
           />
@@ -190,7 +194,7 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
           {dropdownOpen && results.length > 0 && (
             <div
               ref={dropdownRef}
-              className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-white/[0.1] bg-[#1a2030] shadow-xl"
+              className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-white/[0.1] bg-[#1a2030] shadow-xl"
             >
               {results.map((r, i) => (
                 <button
