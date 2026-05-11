@@ -1,5 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Holding } from "../../api/client";
+import { useTickerSearch } from "../../hooks/useTickerSearch";
 
 interface PortfolioInputProps {
   holdings: Holding[];
@@ -7,19 +8,44 @@ interface PortfolioInputProps {
 }
 
 export default function PortfolioInput({ holdings, onChange }: PortfolioInputProps) {
-  const [ticker, setTicker] = useState("");
+  const [query, setQuery] = useState("");
+  const [selectedTicker, setSelectedTicker] = useState("");
   const [shares, setShares] = useState(0);
   const [expanded, setExpanded] = useState(false);
-  const tickerRef = useRef<HTMLInputElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const searchRef = useRef<HTMLInputElement>(null);
+  const qtyRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const { results } = useTickerSearch(query);
+
+  useEffect(() => {
+    if (results.length > 0) {
+      setDropdownOpen(true);
+      setActiveIndex(0);
+    } else {
+      setDropdownOpen(false);
+    }
+  }, [results]);
+
+  function selectResult(symbol: string) {
+    setSelectedTicker(symbol);
+    setQuery(symbol);
+    setDropdownOpen(false);
+    qtyRef.current?.focus();
+  }
 
   function addHolding() {
-    const t = ticker.trim().toUpperCase();
+    const t = selectedTicker.trim();
     if (!t || shares <= 0) return;
     if (holdings.some((h) => h.ticker === t)) return;
     onChange([...holdings, { ticker: t, shares }]);
-    setTicker("");
+    setQuery("");
+    setSelectedTicker("");
     setShares(0);
-    tickerRef.current?.focus();
+    searchRef.current?.focus();
   }
 
   function removeHolding(t: string) {
@@ -31,25 +57,69 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
     onChange(holdings.map((h) => (h.ticker === t ? { ...h, shares: newShares } : h)));
   }
 
-  function handleKey(e: React.KeyboardEvent) {
+  function handleSearchKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!dropdownOpen) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addHolding();
+      }
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, results.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (results[activeIndex]) selectResult(results[activeIndex].symbol);
+    } else if (e.key === "Escape") {
+      setDropdownOpen(false);
+      setQuery("");
+      setSelectedTicker("");
+    } else if (e.key === "Tab") {
+      if (results[0]) {
+        e.preventDefault();
+        selectResult(results[0].symbol);
+      }
+    }
+  }
+
+  function handleQtyKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
       e.preventDefault();
       addHolding();
     }
   }
 
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        searchRef.current &&
+        !searchRef.current.contains(e.target as Node)
+      ) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const canAdd = !!selectedTicker && shares > 0 && !holdings.some((h) => h.ticker === selectedTicker);
+
   return (
     <div className="glass-card">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <h2 className="section-title mb-0">Portfolio Holdings</h2>
-          {holdings.length > 0 && (
+        <h2 className="section-title mb-0">Portfolio Holdings</h2>
+        <div className="flex items-center gap-3">
+          {!expanded && holdings.length > 0 && (
             <span className="text-[11px] text-slate-500">
               {holdings.length} holding{holdings.length !== 1 ? "s" : ""}
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-3">
           <span className="hidden text-[11px] text-slate-500 sm:inline">Min 2 tickers for analysis</span>
           {holdings.length > 0 && (
             <button
@@ -71,7 +141,6 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
         </div>
       </div>
 
-      {/* Expanded holdings pills */}
       {expanded && holdings.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {holdings.map((h) => (
@@ -100,28 +169,65 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
         </div>
       )}
 
-      {/* Add row — always visible */}
-      <div className="flex items-center gap-1.5" onKeyDown={handleKey}>
+      <div className="flex items-center gap-1.5">
+        <div className="relative flex-1">
+          <input
+            ref={searchRef}
+            autoFocus
+            type="text"
+            value={query}
+            onChange={(e) => {
+              const v = e.target.value.toUpperCase();
+              setQuery(v);
+              setSelectedTicker("");
+            }}
+            onKeyDown={handleSearchKeyDown}
+            onFocus={() => results.length > 0 && setDropdownOpen(true)}
+            placeholder="Search ticker…"
+            className="w-full rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none transition-colors focus:border-white/[0.1]"
+          />
+
+          {dropdownOpen && results.length > 0 && (
+            <div
+              ref={dropdownRef}
+              className="absolute left-0 right-0 top-full z-20 mt-1 overflow-hidden rounded-lg border border-white/[0.1] bg-[#1a2030] shadow-xl"
+            >
+              {results.map((r, i) => (
+                <button
+                  key={r.symbol}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    selectResult(r.symbol);
+                  }}
+                  onMouseEnter={() => setActiveIndex(i)}
+                  className={`flex w-full items-center justify-between px-3 py-1.5 text-left transition-colors ${
+                    i === activeIndex ? "bg-white/[0.06]" : "hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <span className="font-mono text-xs font-bold text-slate-200">{r.symbol}</span>
+                  <span className="ml-2 truncate text-[10px] text-slate-500">
+                    {r.name} · {r.exchange}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <input
-          ref={tickerRef}
-          autoFocus
-          type="text"
-          value={ticker}
-          onChange={(e) => setTicker(e.target.value.toUpperCase())}
-          placeholder="Ticker"
-          className="w-20 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 outline-none transition-colors focus:border-white/[0.1]"
-        />
-        <input
+          ref={qtyRef}
           type="number"
           min={0}
           value={shares || ""}
           onChange={(e) => setShares(Number(e.target.value))}
+          onKeyDown={handleQtyKeyDown}
           placeholder="Qty"
           className="w-14 rounded-lg border border-white/[0.06] bg-white/[0.03] px-2 py-1.5 text-center text-xs text-slate-200 placeholder-slate-600 outline-none transition-colors focus:border-white/[0.1] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
+
         <button
           onClick={addHolding}
-          disabled={!ticker.trim() || shares <= 0}
+          disabled={!canAdd}
           className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-500 transition-colors hover:border-white/[0.1] hover:text-slate-200 disabled:opacity-30"
         >
           +
