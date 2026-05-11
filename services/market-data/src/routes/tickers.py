@@ -24,6 +24,7 @@ from src.domain.quality import (
 from src.infrastructure.redis_cache import (
     FUNDAMENTALS_TTL,
     INFO_TTL,
+    SEARCH_TTL,
     cache_get,
     cache_set,
     get_balance_sheet_cache_key,
@@ -32,6 +33,7 @@ from src.infrastructure.redis_cache import (
     get_info_cache_key,
     get_prices_cache_key,
     get_quality_cache_key,
+    get_search_cache_key,
 )
 from src.infrastructure.yfinance_adapter import (
     fetch_balance_sheet,
@@ -39,6 +41,7 @@ from src.infrastructure.yfinance_adapter import (
     fetch_financials,
     fetch_prices_batch,
     fetch_ticker_info,
+    fetch_ticker_search,
 )
 from src.models import Period, Price
 
@@ -225,6 +228,25 @@ async def get_returns(
         returns_df.to_json(orient="columns", date_format="iso"),  # pyright: ignore[reportUnknownMemberType]
     )
     return cast(dict[str, dict[str, float]], json.loads(returns_json))
+
+
+@router.get("/search")
+async def search_tickers(
+    q: str = Query(..., description="Search query (min 2 chars)"),
+    limit: int = Query(5, ge=1, le=10, description="Max results to return"),
+    redis: Redis = Depends(get_redis_client),
+) -> list[dict[str, str]]:
+    if len(q.strip()) < 2:
+        return []
+
+    cache_key = get_search_cache_key(q, limit)
+    cached = await cache_get(redis, cache_key)
+    if cached is not None:
+        return cast(list[dict[str, str]], json.loads(cached))
+
+    results = await fetch_ticker_search(q, max_results=limit)
+    await cache_set(redis, cache_key, json.dumps(results), ttl=SEARCH_TTL)
+    return results
 
 
 @router.get("/{ticker}/info")
