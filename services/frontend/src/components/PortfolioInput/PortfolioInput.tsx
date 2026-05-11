@@ -11,12 +11,13 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
   const [query, setQuery] = useState("");
   const [selectedTicker, setSelectedTicker] = useState("");
   const [shares, setShares] = useState(0);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const qtyRef = useRef<HTMLInputElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const { results } = useTickerSearch(query);
@@ -89,6 +90,9 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
     if (e.key === "Enter") {
       e.preventDefault();
       addHolding();
+    } else if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      buttonRef.current?.focus();
     }
   }
 
@@ -230,6 +234,7 @@ export default function PortfolioInput({ holdings, onChange }: PortfolioInputPro
         />
 
         <button
+          ref={buttonRef}
           onClick={addHolding}
           disabled={!canAdd}
           className="rounded-lg border border-white/[0.06] bg-white/[0.03] px-3 py-1.5 text-xs text-slate-500 transition-colors hover:border-white/[0.1] hover:text-slate-200 disabled:opacity-30"

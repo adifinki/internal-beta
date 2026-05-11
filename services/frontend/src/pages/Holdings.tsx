@@ -217,7 +217,8 @@ export default function Holdings({ holdings }: Props) {
       {/* Holdings table — sorted by value desc */}
       <div className="glass-card">
         <h2 className="section-title mb-3">Positions</h2>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[380px] text-sm">
           <thead>
             <tr className="border-b border-white/[0.06] text-[10px] font-medium tracking-wider text-slate-500">
               <th className="pb-2 text-left font-medium">Stock</th>
@@ -245,7 +246,7 @@ export default function Holdings({ holdings }: Props) {
                         <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                         <div>
                           <span className="font-mono font-semibold text-slate-100">{r.ticker}</span>
-                          {name && <span className="ml-2 text-xs text-slate-500">{name}</span>}
+                          {name && <span className="ml-2 hidden text-xs text-slate-500 sm:inline">{name}</span>}
                         </div>
                       </div>
                     </td>
@@ -314,6 +315,7 @@ export default function Holdings({ holdings }: Props) {
             </tfoot>
           )}
         </table>
+        </div>
       </div>
     </div>
   );
