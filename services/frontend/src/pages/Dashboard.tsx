@@ -74,12 +74,18 @@ export default function Dashboard({ holdings }: Props) {
   return (
     <div className="space-y-6">
       {/* Skipped tickers warning */}
-      {analysis && analysis.skipped_tickers?.length > 0 && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-950/10 px-5 py-3 text-xs text-slate-400">
-          <span className="font-medium text-amber-300">No market data: </span>
-          {analysis.skipped_tickers.join(", ")} — these tickers were excluded from the analysis. Try an equivalent ticker listed on Yahoo Finance.
-        </div>
-      )}
+      {(() => {
+        const skipped = [
+          ...(analysis?.skipped_tickers ?? []),
+          ...(correlation?.excluded_tickers ?? []),
+        ].filter((t, i, a) => a.indexOf(t) === i);
+        return skipped.length > 0 ? (
+          <div className="rounded-2xl border border-amber-500/20 bg-amber-950/10 px-5 py-3 text-xs text-slate-400">
+            <span className="font-medium text-amber-300">No market data: </span>
+            {skipped.join(", ")} — excluded from analysis. Try an equivalent ticker on Yahoo Finance.
+          </div>
+        ) : null;
+      })()}
 
       {/* Top metrics row */}
       {analysis && (

@@ -74,29 +74,34 @@ async def get_portfolio_correlation(
 ) -> CorrelationResponse:
     returns = await fetch_returns(market_data_client, tickers=tickers, period=period)
 
-    # Validate that we have data for all requested tickers
-    if returns.empty or len(returns.columns) != len(tickers):
-        missing_tickers = set(tickers) - set(returns.columns)
+    if returns.empty:
         raise HTTPException(
             status_code=400,
-            detail=f"Could not fetch data for tickers: {list(missing_tickers)}"
+            detail=f"Could not fetch price data for any of: {tickers}"
         )
 
+    excluded_tickers = [t for t in tickers if t not in returns.columns]
+
     corr_df = compute_correlation(returns)
-    
-    # Validate that correlation matrix doesn't contain NaN values
-    if corr_df.isna().any().any():
+
+    # Drop any tickers whose correlation row/col is all NaN (insufficient history).
+    valid_cols = [c for c in corr_df.columns if not corr_df[c].isna().all()]
+    dropped = [c for c in corr_df.columns if c not in valid_cols]
+    excluded_tickers.extend(dropped)
+    corr_df = corr_df.loc[valid_cols, valid_cols]
+
+    if corr_df.empty or len(corr_df.columns) < 2:
         raise HTTPException(
             status_code=400,
-            detail="Correlation computation resulted in invalid data - some tickers may have insufficient price history"
+            detail="Not enough tickers with sufficient price history to compute correlation"
         )
-    
+
     tickers_ordered = list(corr_df.columns)
     matrix: dict[str, dict[str, float]] = {
         row: {col: float(corr_df.loc[row, col]) for col in tickers_ordered}  # pyright: ignore[reportArgumentType]
         for row in tickers_ordered
     }
-    return CorrelationResponse(matrix=matrix, tickers=tickers_ordered)
+    return CorrelationResponse(matrix=matrix, tickers=tickers_ordered, excluded_tickers=excluded_tickers)
 
 
 @router.post("/profile")

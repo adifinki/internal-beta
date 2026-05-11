@@ -78,6 +78,7 @@ export interface PortfolioProfile {
 export interface CorrelationMatrix {
   matrix: Record<string, Record<string, number>>;
   tickers: string[];
+  excluded_tickers: string[];
 }
 
 export interface ScreenerResult {

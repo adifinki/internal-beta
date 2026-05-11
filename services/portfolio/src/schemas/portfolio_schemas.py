@@ -14,6 +14,7 @@ class CorrelationResponse(BaseModel):
     # guaranteed to be consistent, so the frontend uses this to render
     # columns in a fixed, predictable order.
     tickers: list[str]
+    excluded_tickers: list[str] = []
 
 
 class OptimizeRequest(BaseModel):
