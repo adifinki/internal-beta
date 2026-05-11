@@ -169,3 +169,53 @@ class TestHealthCheck:
         resp = client.get("/health")
         assert resp.status_code == 200
         assert resp.json() == {"status": "ok"}
+
+
+# ---------------------------------------------------------------------------
+# GET /tickers/search
+# ---------------------------------------------------------------------------
+
+
+class TestSearchTickers:
+    @patch("src.routes.tickers.fetch_ticker_search")
+    def test_returns_results(self, mock_search: AsyncMock, client: TestClient) -> None:
+        mock_search.return_value = [
+            {"symbol": "BRK-B", "name": "Berkshire Hathaway Inc.", "exchange": "NYSE", "type": "EQUITY"},
+            {"symbol": "BRKB.VI", "name": "Berkshire Hathaway Inc.", "exchange": "Vienna", "type": "EQUITY"},
+        ]
+
+        resp = client.get("/tickers/search", params={"q": "BRK", "limit": 5})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data) == 2
+        assert data[0]["symbol"] == "BRK-B"
+        assert data[0]["name"] == "Berkshire Hathaway Inc."
+        assert data[0]["exchange"] == "NYSE"
+
+    @patch("src.routes.tickers.fetch_ticker_search")
+    def test_short_query_returns_empty_without_fetch(
+        self, mock_search: AsyncMock, client: TestClient
+    ) -> None:
+        resp = client.get("/tickers/search", params={"q": "B"})
+        assert resp.status_code == 200
+        assert resp.json() == []
+        mock_search.assert_not_called()
+
+    @patch("src.routes.tickers.fetch_ticker_search")
+    def test_uses_cache_on_second_call(
+        self, mock_search: AsyncMock, client: TestClient
+    ) -> None:
+        mock_search.return_value = [
+            {"symbol": "AAPL", "name": "Apple Inc.", "exchange": "NASDAQ", "type": "EQUITY"}
+        ]
+
+        client.get("/tickers/search", params={"q": "AAPL", "limit": 5})
+        # Verify cache_set was called
+        app.state.redis.set.assert_awaited()
+
+    @patch("src.routes.tickers.fetch_ticker_search")
+    def test_missing_q_param_returns_422(
+        self, mock_search: AsyncMock, client: TestClient
+    ) -> None:
+        resp = client.get("/tickers/search")
+        assert resp.status_code == 422
