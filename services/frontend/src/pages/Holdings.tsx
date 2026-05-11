@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from "react";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import type { Holding } from "../api/client";
-import { getTickerInfo } from "../api/client";
+import { getTickerInfo, getCorrelation } from "../api/client";
 import { fmtDollar, fmtDollarCompact, fmtPct, fmtNum } from "../utils/format";
 
 interface Props {
@@ -117,6 +117,15 @@ export default function Holdings({ holdings }: Props) {
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [hoveredTicker, setHoveredTicker] = useState<string | null>(null);
 
+  const tickers = holdings.map((h) => h.ticker);
+  const correlationQuery = useQuery({
+    queryKey: ["correlation", tickers],
+    queryFn: () => getCorrelation(tickers),
+    enabled: tickers.length >= 2,
+    staleTime: 1000 * 60 * 5,
+  });
+  const excludedTickers = new Set(correlationQuery.data?.excluded_tickers ?? []);
+
   const infoQueries = useQueries({
     queries: holdings.map((h) => ({
       queryKey: ["tickerInfo", h.ticker],
@@ -217,6 +226,12 @@ export default function Holdings({ holdings }: Props) {
       {/* Holdings table — sorted by value desc */}
       <div className="glass-card">
         <h2 className="section-title mb-3">Positions</h2>
+        {excludedTickers.size > 0 && (
+          <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-950/10 px-4 py-2.5 text-xs text-slate-400">
+            <span className="font-medium text-amber-300">Excluded from analysis: </span>
+            {[...excludedTickers].join(", ")} — Yahoo Finance has no price history for these symbols. They appear in your portfolio but won't affect correlation, risk, or optimization results. Try searching for an equivalent ticker listed on a major exchange (e.g. <span className="font-mono text-slate-300">BRK-B</span> instead of <span className="font-mono text-slate-300">BRKB.VI</span>).
+          </div>
+        )}
         <div className="overflow-x-auto">
         <table className="w-full min-w-[380px] text-sm">
           <thead>
@@ -244,9 +259,14 @@ export default function Holdings({ holdings }: Props) {
                     <td className="py-3">
                       <div className="flex items-center gap-2">
                         <div className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                        <div>
+                        <div className="flex items-center gap-1.5">
                           <span className="font-mono font-semibold text-slate-100">{r.ticker}</span>
-                          {name && <span className="ml-2 hidden text-xs text-slate-500 sm:inline">{name}</span>}
+                          {name && <span className="ml-1 hidden text-xs text-slate-500 sm:inline">{name}</span>}
+                          {excludedTickers.has(r.ticker) && (
+                            <span className="rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                              no data
+                            </span>
+                          )}
                         </div>
                       </div>
                     </td>
