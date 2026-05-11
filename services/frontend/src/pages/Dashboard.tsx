@@ -82,7 +82,7 @@ export default function Dashboard({ holdings }: Props) {
         return skipped.length > 0 ? (
           <div className="rounded-2xl border border-amber-500/20 bg-amber-950/10 px-5 py-3 text-xs text-slate-400">
             <span className="font-medium text-amber-300">No market data: </span>
-            {skipped.join(", ")} — excluded from analysis. Try an equivalent ticker on Yahoo Finance.
+            {skipped.join(", ")} - excluded from analysis. Try an equivalent ticker on Yahoo Finance.
           </div>
         ) : null;
       })()}

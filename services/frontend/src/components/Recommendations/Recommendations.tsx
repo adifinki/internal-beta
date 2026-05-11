@@ -57,7 +57,7 @@ const EVIDENCE_LABELS: Record<string, string> = {
 const HIDDEN_EVIDENCE_KEYS = new Set(["action_detail", "principle"]);
 
 function formatEvidenceValue(k: string, v: number | string | null): string {
-  if (v == null) return "—";
+  if (v == null) return "-";
   if (Array.isArray(v)) return (v as string[]).slice(0, 2).join(", ");
   if (typeof v === "number") {
     if (["pct_contribution", "weight", "sector_weight", "vol_improvement", "volatility", "max_drawdown"].includes(k))

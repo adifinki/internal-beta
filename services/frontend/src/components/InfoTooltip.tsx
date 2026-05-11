@@ -176,8 +176,8 @@ const TOOLTIPS: Record<string, { desc: string; range: string; use: string }> = {
     use: "Lower is better. A PEG < 1 means you're paying less than the growth rate justifies.",
   },
   scenario_analysis: {
-    desc: "Estimates how your portfolio would react if a sector or macro factor moves by a given amount. For each holding, we compute its historical beta against a sector ETF proxy (e.g. XLK for Technology, XLV for Healthcare, TLT for Interest Rates). The portfolio-level impact uses the portfolio's overall beta to the proxy — this captures cross-sector correlations (e.g. a Communication Services stock that moves with Tech).",
-    range: "This is an estimate, not a prediction. It assumes future correlations resemble the past, which may not hold during crises or regime changes. The sector ETF proxies are imperfect — individual stocks can behave differently from their sector. Use the per-holding breakdown to see which stocks drive the exposure.",
+    desc: "Estimates how your portfolio would react if a sector or macro factor moves by a given amount. For each holding, we compute its historical beta against a sector ETF proxy (e.g. XLK for Technology, XLV for Healthcare, TLT for Interest Rates). The portfolio-level impact uses the portfolio's overall beta to the proxy, which captures cross-sector correlations (e.g. a Communication Services stock that moves with Tech).",
+    range: "This is an estimate, not a prediction. It assumes future correlations resemble the past, which may not hold during crises or regime changes. The sector ETF proxies are imperfect, and individual stocks can behave differently from their sector. Use the per-holding breakdown to see which stocks drive the exposure.",
     use: "Use this to stress-test concentration you can't see. You may think you're diversified across sectors, but if all your holdings are correlated to Tech, a Tech crash hits your whole portfolio. Try different scenarios to find your blind spots.",
   },
   cheap_quality_screener: {

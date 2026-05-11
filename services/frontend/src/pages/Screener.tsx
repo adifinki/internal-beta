@@ -392,23 +392,23 @@ export default function Screener({ onAnalyze, holdings }: Props) {
                           {row.quality_score >= 70 && row.garp_score >= 65 && (
                             <span
                               className="ml-1 text-[10px] text-amber-400 cursor-default"
-                              title="Buffett-grade: quality ≥70, GARP ≥65 — high-quality business at a reasonable price."
+                              title="Buffett-grade: quality ≥70, GARP ≥65 - high-quality business at a reasonable price."
                             >★</span>
                           )}
                         </td>
-                        <td className="py-2.5 text-slate-400">{row.sector ?? "—"}</td>
+                        <td className="py-2.5 text-slate-400">{row.sector ?? "-"}</td>
                         <td className="py-2.5"><ScoreBar value={row.cheap_quality_score} /></td>
                         <td className="py-2.5"><ScoreBar value={row.quality_score} /></td>
                         <td className="py-2.5"><ScoreBar value={row.garp_score} /></td>
                         <td className="py-2.5 text-right font-mono text-slate-300">
-                          {row.forward_pe != null ? row.forward_pe.toFixed(1) : "—"}
+                          {row.forward_pe != null ? row.forward_pe.toFixed(1) : "-"}
                         </td>
                         <td className="py-2.5 text-right font-mono text-slate-300">
-                          {row.peg_ratio != null ? row.peg_ratio.toFixed(2) : "—"}
+                          {row.peg_ratio != null ? row.peg_ratio.toFixed(2) : "-"}
                         </td>
                         {hasPortfolio && (() => {
                           const b = betaMap[row.ticker]?.internal_beta;
-                          if (b == null) return <td className="py-2.5 text-right font-mono text-slate-500">—</td>;
+                          if (b == null) return <td className="py-2.5 text-right font-mono text-slate-500">-</td>;
                           const color = b < 0 ? "text-green-400" : b < 0.5 ? "text-green-400" : b < 0.8 ? "text-blue-400" : b < 1.2 ? "text-slate-300" : "text-red-400";
                           return <td className={`py-2.5 text-right font-mono font-semibold ${color}`}>{b.toFixed(2)}</td>;
                         })()}
@@ -416,7 +416,7 @@ export default function Screener({ onAnalyze, holdings }: Props) {
                           <td className="py-2.5">
                             {portfolioFitMap[row.ticker] != null
                               ? <ScoreBar value={portfolioFitMap[row.ticker]} />
-                              : <span className="text-right font-mono text-slate-500">—</span>}
+                              : <span className="text-right font-mono text-slate-500">-</span>}
                           </td>
                         )}
                         <td className="py-2.5 text-right">

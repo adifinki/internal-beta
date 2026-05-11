@@ -16,9 +16,9 @@ function Row({ label, bVal, aVal }: { label: string; bVal: number; aVal: number 
     <div className="flex items-center justify-between py-1 border-b border-white/[0.02] last:border-0">
       <span className="text-slate-400 text-xs">{label}</span>
       <span className="font-mono text-xs">
-        <span className="text-slate-500">{bVal === 0 ? "—" : `${bVal.toFixed(1)}%`}</span>
+        <span className="text-slate-500">{bVal === 0 ? "-" : `${bVal.toFixed(1)}%`}</span>
         <span className="text-slate-600 mx-1.5">→</span>
-        <span className="text-slate-200">{aVal === 0 ? "—" : `${aVal.toFixed(1)}%`}</span>
+        <span className="text-slate-200">{aVal === 0 ? "-" : `${aVal.toFixed(1)}%`}</span>
         <span className={`ml-2 w-14 inline-block text-right ${
           isNew ? "text-blue-400" : delta > 0.5 ? "text-amber-400" : delta < -0.5 ? "text-emerald-400" : "text-slate-600"
         }`}>

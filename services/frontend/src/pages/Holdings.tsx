@@ -93,7 +93,7 @@ function DonutChart({ slices, total, size = 240, hovered, onHover }: {
             onMouseEnter={() => onHover(w.ticker)}
             onMouseLeave={() => onHover(null)}
           >
-            <title>{w.ticker} — {fmtDollarCompact(w.value)} ({(w.pct * 100).toFixed(1)}%)</title>
+            <title>{w.ticker} {fmtDollarCompact(w.value)} ({(w.pct * 100).toFixed(1)}%)</title>
           </path>
         );
       })}
@@ -229,7 +229,7 @@ export default function Holdings({ holdings }: Props) {
         {excludedTickers.size > 0 && (
           <div className="mb-3 rounded-xl border border-amber-500/20 bg-amber-950/10 px-4 py-2.5 text-xs text-slate-400">
             <span className="font-medium text-amber-300">Excluded from analysis: </span>
-            {[...excludedTickers].join(", ")} — Yahoo Finance has no price history for these symbols. They appear in your portfolio but won't affect correlation, risk, or optimization results. Try searching for an equivalent ticker listed on a major exchange (e.g. <span className="font-mono text-slate-300">BRK-B</span> instead of <span className="font-mono text-slate-300">BRKB.VI</span>).
+            {[...excludedTickers].join(", ")} - Yahoo Finance has no price history for these symbols. They appear in your portfolio but won't affect correlation, risk, or optimization results. Try searching for an equivalent ticker listed on a major exchange (e.g. <span className="font-mono text-slate-300">BRK-B</span> instead of <span className="font-mono text-slate-300">BRKB.VI</span>).
           </div>
         )}
         <div className="overflow-x-auto">
@@ -298,8 +298,8 @@ export default function Holdings({ holdings }: Props) {
                     <tr className="border-b border-white/[0.04] bg-white/[0.02]">
                       <td colSpan={5} className="px-4 py-4">
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
-                          <Stat label="Sector" value={(r.info.sector as string) ?? "—"} />
-                          <Stat label="Industry" value={(r.info.industry as string) ?? "—"} />
+                          <Stat label="Sector" value={(r.info.sector as string) ?? "-"} />
+                          <Stat label="Industry" value={(r.info.industry as string) ?? "-"} />
                           <Stat label="Market Cap" value={fmtDollarCompact(n(r.info.marketCap))} />
                           <Stat label="P/E" value={fmtNum(n(r.info.trailingPE))} />
                           <Stat label="Fwd P/E" value={fmtNum(n(r.info.forwardPE))} />

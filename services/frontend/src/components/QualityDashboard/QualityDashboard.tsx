@@ -240,7 +240,7 @@ function getPortfolioFit(
   // NATURAL HEDGE / EXCELLENT DIVERSIFIER: negative or very low beta
   if (isNegativeBeta || isVeryLowBeta) {
     const reasons = [betaStr!];
-    if (isNegativeBeta) reasons.push("moves against the portfolio — acts as a hedge");
+    if (isNegativeBeta) reasons.push("moves against the portfolio - acts as a hedge");
     else reasons.push("moves nearly independently of the portfolio");
     if (isHighQuality) reasons.push(`quality ${qualityScore} adds fundamental support`);
     return { fit: "Diversifier", reason: reasons.join(" · ") };
@@ -281,7 +281,7 @@ function getPortfolioFit(
     const reasons = [`Quality ${qualityScore}`];
     if (isWideM) reasons.push("wide moat");
     if (roicStable !== false) reasons.push("stable ROIC");
-    reasons.push(`GARP ${garpScore} — check valuation before adding`);
+    reasons.push(`GARP ${garpScore} - check valuation before adding`);
     return { fit: "Core", reason: reasons.join(" · ") };
   }
 
@@ -305,7 +305,7 @@ const FIT_ORDER: Record<PortfolioFit, number> = { Core: 5, Diversifier: 4, Overw
 function getQualityHints(h: HoldingQuality): string {
   const score = h.quality_score;
   if (score == null) return "No data available.";
-  if (score >= 80) return `Score ${score} — strong across ROIC, margins, FCF, and earnings consistency.`;
+  if (score >= 80) return `Score ${score} - strong across ROIC, margins, FCF, and earnings consistency.`;
 
   const th = h.thesis_health as Record<string, unknown> | undefined;
   if (!th) return `Score ${score}. Drivers: ROIC (25%), gross margins (25%), FCF yield (15%), earnings consistency (15%), debt health (10%), revenue growth (10%).`;
@@ -313,36 +313,36 @@ function getQualityHints(h: HoldingQuality): string {
   const hints: string[] = [];
   const roic = th.roic as Record<string, unknown> | undefined;
   if (roic?.current != null && (roic.current as number) < 0.15)
-    hints.push(`ROIC ${((roic.current as number) * 100).toFixed(1)}% — target >15% (worth 20/25 pts)`);
+    hints.push(`ROIC ${((roic.current as number) * 100).toFixed(1)}% - target >15% (worth 20/25 pts)`);
   const fcf = th.fcf as Record<string, unknown> | undefined;
   if (fcf?.yield != null && (fcf.yield as number) < 0.03)
-    hints.push(`FCF yield ${((fcf.yield as number) * 100).toFixed(1)}% — target >3% (up to 12/15 pts)`);
-  if (fcf?.growing === false) hints.push("FCF not growing — resuming growth unlocks up to 5 pts");
+    hints.push(`FCF yield ${((fcf.yield as number) * 100).toFixed(1)}% - target >3% (up to 12/15 pts)`);
+  if (fcf?.growing === false) hints.push("FCF not growing - resuming growth unlocks up to 5 pts");
   const rev = th.revenue as Record<string, unknown> | undefined;
-  if (rev?.accelerating === false) hints.push("Revenue decelerating — acceleration adds up to 5 pts");
-  if (rev?.all_positive === false) hints.push("Had negative revenue year — all-positive trend needed");
+  if (rev?.accelerating === false) hints.push("Revenue decelerating - acceleration adds up to 5 pts");
+  if (rev?.all_positive === false) hints.push("Had negative revenue year - all-positive trend needed");
   const earn = th.earnings as Record<string, unknown> | undefined;
-  if (earn?.margin_expanding === false) hints.push("Margins contracting — expansion unlocks pts");
-  if (earn?.all_positive === false) hints.push("Had negative earnings year — consistency needed");
+  if (earn?.margin_expanding === false) hints.push("Margins contracting - expansion unlocks pts");
+  if (earn?.all_positive === false) hints.push("Had negative earnings year - consistency needed");
   const bal = th.balance as Record<string, unknown> | undefined;
   if (bal?.debt_to_equity != null && (bal.debt_to_equity as number) > 100)
-    hints.push(`D/E ${(bal.debt_to_equity as number).toFixed(0)} — reduce below 75 for full debt pts`);
+    hints.push(`D/E ${(bal.debt_to_equity as number).toFixed(0)} - reduce below 75 for full debt pts`);
   const flags = th.flags as string[] | undefined;
   if (flags && flags.length > 0 && hints.length === 0) hints.push(...flags);
 
   return hints.length > 0
-    ? `Score ${score} — to improve: ${hints.join(" · ")}`
-    : `Score ${score} — components: ROIC, margins, FCF yield, earnings consistency, debt, revenue growth.`;
+    ? `Score ${score} - to improve: ${hints.join(" · ")}`
+    : `Score ${score} - components: ROIC, margins, FCF yield, earnings consistency, debt, revenue growth.`;
 }
 
 function getGarpHints(score: number | undefined): string {
   if (score == null) return "No data.";
-  if (score >= 70) return `Score ${score} — PEG ratio, earnings growth, revenue growth, and forward P/E are all favorable.`;
+  if (score >= 70) return `Score ${score} - PEG ratio, earnings growth, revenue growth, and forward P/E are all favorable.`;
   const hints: string[] = [];
-  if (score < 40) hints.push("PEG likely above 2 — target PEG < 1.5 (worth 25/40 pts)");
-  else hints.push("PEG is moderate — target PEG < 1.0 for full 40 pts");
+  if (score < 40) hints.push("PEG likely above 2 - target PEG < 1.5 (worth 25/40 pts)");
+  else hints.push("PEG is moderate - target PEG < 1.0 for full 40 pts");
   hints.push("Earnings growth > 15% adds 20/25 pts", "Revenue growth > 20% adds 15/15 pts", "Forward P/E < 20 adds 15/20 pts");
-  return `Score ${score} — to improve: ${hints.join(" · ")}`;
+  return `Score ${score} - to improve: ${hints.join(" · ")}`;
 }
 
 // ─── Sortable column header ───────────────────────────────────────────────────
