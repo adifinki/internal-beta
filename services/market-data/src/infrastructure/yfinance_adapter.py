@@ -174,3 +174,29 @@ async def fetch_cashflow(ticker: str) -> pd.DataFrame:
         return await _with_retry(_fetch, f"cashflow:{ticker}")
     except Exception:
         return pd.DataFrame()
+
+
+async def fetch_ticker_search(query: str, max_results: int = 5) -> list[dict[str, Any]]:
+    """Search Yahoo Finance for tickers matching query.
+
+    Returns a list of dicts with keys: symbol, name, exchange, type.
+    Returns [] on any error — callers should treat empty as "no results".
+    """
+    def _search() -> list[dict[str, Any]]:
+        results = yf.Search(query, max_results=max_results).quotes
+        return [
+            {
+                "symbol": r.get("symbol", ""),
+                "name": r.get("shortname") or r.get("longname") or "",
+                "exchange": r.get("exchDisp", ""),
+                "type": r.get("quoteType", ""),
+            }
+            for r in results
+            if r.get("symbol")
+        ]
+
+    try:
+        return await asyncio.to_thread(_search)
+    except Exception as exc:
+        logger.warning("Ticker search failed for query '%s': %s", query, exc)
+        return []
