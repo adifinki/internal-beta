@@ -202,7 +202,7 @@ class TestSearchTickers:
         mock_search.assert_not_called()
 
     @patch("src.routes.tickers.fetch_ticker_search")
-    def test_uses_cache_on_second_call(
+    def test_cache_set_called_on_miss(
         self, mock_search: AsyncMock, client: TestClient
     ) -> None:
         mock_search.return_value = [

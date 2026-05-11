@@ -235,7 +235,7 @@ async def search_tickers(
     q: str = Query(..., description="Search query (min 2 chars)"),
     limit: int = Query(5, ge=1, le=10, description="Max results to return"),
     redis: Redis = Depends(get_redis_client),
-) -> list[dict[str, str]]:
+) -> list[dict[str, Any]]:
     if len(q.strip()) < 2:
         return []
 
