@@ -12,6 +12,7 @@ FUNDAMENTALS_TTL = (
     604800  # 7 days — financials, balance sheet, cashflow (change quarterly)
 )
 INFO_TTL = 172800  # 48 hours — company info
+SEARCH_TTL = 300  # 5 minutes — search results
 
 
 async def cache_get(redis: Redis, key: str) -> str | None:
@@ -44,3 +45,7 @@ def get_cashflow_cache_key(ticker: str) -> str:
 
 def get_quality_cache_key(ticker: str) -> str:
     return f"quality:{ticker}"
+
+
+def get_search_cache_key(q: str, limit: int) -> str:
+    return f"search:{q.lower().strip()}:{limit}"
