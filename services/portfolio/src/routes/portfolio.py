@@ -31,6 +31,7 @@ from src.infrastructure.market_data_client import (
     fetch_info_batch,
     fetch_quality_batch,
     fetch_returns,
+    prices_from_info,
 )
 from src.schemas.portfolio_schemas import (
     CorrelationResponse,
@@ -43,25 +44,6 @@ router = APIRouter(
     prefix="/portfolio",
     tags=["portfolio"],
 )
-
-
-def _prices_from_info(
-    tickers: list[str],
-    info_by_ticker: dict[str, dict[str, Any]],
-) -> dict[str, float]:
-    """Extract current prices from yfinance info dicts."""
-    prices: dict[str, float] = {}
-    for t in tickers:
-        info = info_by_ticker.get(t, {})
-        p = (
-            info.get("currentPrice")
-            or info.get("regularMarketPrice")
-            or info.get("navPrice")
-            or info.get("previousClose")
-        )
-        if p is not None:
-            prices[t] = float(p)
-    return prices
 
 
 @router.get("/correlation")
@@ -130,7 +112,7 @@ async def get_portfolio_profile(
             detail="Could not fetch returns data for any tickers"
         )
 
-    prices = _prices_from_info(tickers, info_by_ticker)
+    prices = prices_from_info(tickers, info_by_ticker)
 
     # Compute weights (only for tickers with known prices)
     valid_tickers = [t for t in tickers if t in prices]
@@ -201,7 +183,7 @@ async def post_optimize(
         fetch_info_batch(market_data_client, tickers),
     )
 
-    prices = _prices_from_info(tickers, info_by_ticker)
+    prices = prices_from_info(tickers, info_by_ticker)
 
     valid_tickers = [t for t in tickers if t in prices]
     valid_holdings = {t: holdings_dict[t] for t in valid_tickers}

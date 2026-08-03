@@ -6,6 +6,7 @@ import redis.asyncio as redis
 from fastapi import FastAPI
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from .routes.funds import router as FundsRouter
 from .routes.portfolio import router as PortfolioRouter
 
 
@@ -39,6 +40,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 app = FastAPI(title="portfolio", version="0.1.0", lifespan=lifespan)
 
 app.include_router(PortfolioRouter)
+app.include_router(FundsRouter)
 
 
 @app.get("/health")
