@@ -253,3 +253,74 @@ export async function searchTickers(q: string, signal?: AbortSignal): Promise<Ti
   const params = new URLSearchParams({ q, limit: "5" });
   return fetchJson<TickerSearchResult[]>(`${BASE}/api/market-data/tickers/search?${params}`, { signal });
 }
+
+export interface FundRow {
+  label: string;
+  pct_of_fund: number;
+  proxy_ticker: string | null;
+}
+
+export interface CatalogTrack {
+  track_id: string;
+  track_name: string;
+  as_of_date: string;
+}
+
+export interface CatalogCompany {
+  company_id: string;
+  company_name: string;
+  tracks: CatalogTrack[];
+}
+
+export interface CatalogCategory {
+  category: string;
+  companies: CatalogCompany[];
+}
+
+export interface FundsCatalog {
+  categories: CatalogCategory[];
+}
+
+export interface FundSelection {
+  category: string;
+  company_id: string;
+  track_id: string;
+  amount_usd: number;
+}
+
+export interface DerivedHoldingSource {
+  category: string;
+  company_name: string;
+  track_name: string;
+}
+
+export interface DerivedHolding {
+  ticker: string;
+  shares: number;
+  source: DerivedHoldingSource;
+}
+
+export interface UnmappedRow {
+  category: string;
+  company_name: string;
+  track_name: string;
+  label: string;
+  pct_of_fund: number;
+}
+
+export interface DeriveHoldingsResult {
+  holdings: DerivedHolding[];
+  unmapped: UnmappedRow[];
+}
+
+export async function getFundsCatalog(): Promise<FundsCatalog> {
+  return fetchJson(`${BASE}/api/portfolio/funds/catalog`);
+}
+
+export async function deriveFundHoldings(selections: FundSelection[]): Promise<DeriveHoldingsResult> {
+  return fetchJson(`${BASE}/api/portfolio/funds/derive-holdings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ selections }),
+  });
+}
