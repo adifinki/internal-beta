@@ -308,9 +308,20 @@ export interface UnmappedRow {
   pct_of_fund: number;
 }
 
+export interface SelectionCoverage {
+  category: string;
+  company_name: string;
+  track_name: string;
+  amount_usd: number;
+  mapped_pct: number;
+  total_pct: number;
+  mapped_amount_usd: number;
+}
+
 export interface DeriveHoldingsResult {
   holdings: DerivedHolding[];
   unmapped: UnmappedRow[];
+  coverage: SelectionCoverage[];
 }
 
 export async function getFundsCatalog(): Promise<FundsCatalog> {

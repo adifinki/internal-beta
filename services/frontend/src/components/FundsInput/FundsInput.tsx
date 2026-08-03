@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getFundsCatalog } from "../../api/client";
-import type { UnmappedRow } from "../../api/client";
+import type { UnmappedRow, SelectionCoverage } from "../../api/client";
 
 export const FUND_CATEGORIES = ["pension", "kupat_gemel_lehashkaa", "keren_hishtalmut"] as const;
 export type FundCategory = (typeof FUND_CATEGORIES)[number];
@@ -23,10 +23,16 @@ interface Props {
   slots: Record<FundCategory, FundSlotState>;
   onChange: (category: FundCategory, slot: FundSlotState) => void;
   unmapped: UnmappedRow[];
+  coverage: SelectionCoverage[];
+  holdingsError: boolean;
+  holdingsLoading: boolean;
 }
 
-export default function FundsInput({ slots, onChange, unmapped }: Props) {
-  const { data: catalog } = useQuery({
+export default function FundsInput({ slots, onChange, unmapped, coverage, holdingsError, holdingsLoading }: Props) {
+  const {
+    data: catalog,
+    isError: catalogError,
+  } = useQuery({
     queryKey: ["fundsCatalog"],
     queryFn: getFundsCatalog,
     staleTime: Infinity,
@@ -34,6 +40,24 @@ export default function FundsInput({ slots, onChange, unmapped }: Props) {
 
   return (
     <div className="space-y-4">
+      {catalogError && (
+        <div className="rounded-xl border border-red-500/20 bg-red-950/10 px-4 py-2.5 text-xs text-red-300">
+          Couldn't load the fund catalog. Try refreshing the page.
+        </div>
+      )}
+
+      {holdingsLoading && (
+        <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-2.5 text-xs text-slate-400">
+          Updating fund holdings...
+        </div>
+      )}
+
+      {holdingsError && (
+        <div className="rounded-xl border border-red-500/20 bg-red-950/10 px-4 py-2.5 text-xs text-red-300">
+          Couldn't load your fund holdings. They aren't contributing to your portfolio right now - try again.
+        </div>
+      )}
+
       {FUND_CATEGORIES.map((category) => {
         const categoryData = catalog?.categories.find((c) => c.category === category);
         const slot = slots[category];
@@ -78,15 +102,31 @@ export default function FundsInput({ slots, onChange, unmapped }: Props) {
       })}
 
       {unmapped.length > 0 && (
-        <div className="rounded-xl border border-amber-500/20 bg-amber-950/10 px-4 py-2.5 text-xs text-slate-400">
-          <span className="font-medium text-amber-300">Not counted toward stock holdings: </span>
-          {unmapped.map((u, i) => (
-            <span key={i}>
-              {i > 0 && ", "}
-              {(u.pct_of_fund * 100).toFixed(1)}% {u.label} ({u.company_name} - {u.track_name})
-            </span>
-          ))}
-          {" "}- no tradeable proxy exists for these positions yet.
+        <div className="rounded-xl border border-amber-500/20 bg-amber-950/10 px-4 py-2.5 text-xs text-slate-400 space-y-1.5">
+          <div>
+            <span className="font-medium text-amber-300">Not counted toward stock holdings: </span>
+            {unmapped.map((u, i) => (
+              <span key={i}>
+                {i > 0 && ", "}
+                {(u.pct_of_fund * 100).toFixed(1)}% {u.label} ({u.company_name} - {u.track_name})
+              </span>
+            ))}
+            {" "}- no tradeable proxy exists for these positions yet.
+          </div>
+          {coverage.length > 0 && (
+            <div className="border-t border-amber-500/10 pt-1.5">
+              {coverage.map((c, i) => {
+                const pct = c.total_pct > 0 ? (c.mapped_pct / c.total_pct) * 100 : 0;
+                return (
+                  <div key={i}>
+                    {pct.toFixed(0)}% of {c.company_name} - {c.track_name}'s disclosed allocation has a tradeable
+                    proxy - ${c.mapped_amount_usd.toFixed(0)} of your ${c.amount_usd.toFixed(0)} contributes to your
+                    holdings; the rest is shown above.
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

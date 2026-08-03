@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { Holding, FundSelection, UnmappedRow } from "./api/client";
+import type { Holding, FundSelection, UnmappedRow, DerivedHolding, SelectionCoverage } from "./api/client";
 import { deriveFundHoldings } from "./api/client";
 import PortfolioInput from "./components/PortfolioInput/PortfolioInput";
 import FundsInput, { FUND_CATEGORIES, EMPTY_FUND_SLOT } from "./components/FundsInput/FundsInput";
@@ -12,6 +12,13 @@ import Screener from "./pages/Screener";
 
 const LS_KEY = "portfolio_saved";
 const FUNDS_LS_KEY = "portfolio_fund_slots";
+
+// Stable empty-array references so components/memos relying on referential
+// identity (e.g. downstream useMemo deps) don't re-run on every render just
+// because there's no fund data yet.
+const EMPTY_HOLDINGS: DerivedHolding[] = [];
+const EMPTY_UNMAPPED: UnmappedRow[] = [];
+const EMPTY_COVERAGE: SelectionCoverage[] = [];
 
 interface SavedState {
   holdings: Holding[];
@@ -108,8 +115,11 @@ export default function App() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const derivedHoldings = fundSelections.length > 0 ? fundHoldingsQuery.data?.holdings ?? [] : [];
-  const unmappedFundRows: UnmappedRow[] = fundSelections.length > 0 ? fundHoldingsQuery.data?.unmapped ?? [] : [];
+  const derivedHoldings = fundSelections.length > 0 ? fundHoldingsQuery.data?.holdings ?? EMPTY_HOLDINGS : EMPTY_HOLDINGS;
+  const unmappedFundRows: UnmappedRow[] =
+    fundSelections.length > 0 ? fundHoldingsQuery.data?.unmapped ?? EMPTY_UNMAPPED : EMPTY_UNMAPPED;
+  const fundCoverage: SelectionCoverage[] =
+    fundSelections.length > 0 ? fundHoldingsQuery.data?.coverage ?? EMPTY_COVERAGE : EMPTY_COVERAGE;
 
   const combinedHoldings: Holding[] = useMemo(() => {
     const byTicker = new Map<string, number>();
@@ -249,6 +259,9 @@ export default function App() {
               slots={fundSlots}
               onChange={(category, slot) => setFundSlots((prev) => ({ ...prev, [category]: slot }))}
               unmapped={unmappedFundRows}
+              coverage={fundCoverage}
+              holdingsError={fundHoldingsQuery.isError}
+              holdingsLoading={fundHoldingsQuery.isFetching}
             />
           )}
 
