@@ -6,6 +6,7 @@ import { fmtDollar, fmtDollarCompact, fmtPct, fmtNum } from "../utils/format";
 
 interface Props {
   holdings: Holding[];
+  sources?: Record<string, { manual: number; funds: { label: string; shares: number }[] }>;
 }
 
 const COLORS = [
@@ -113,7 +114,7 @@ function DonutChart({ slices, total, size = 240, hovered, onHover }: {
   );
 }
 
-export default function Holdings({ holdings }: Props) {
+export default function Holdings({ holdings, sources }: Props) {
   const [expandedTicker, setExpandedTicker] = useState<string | null>(null);
   const [hoveredTicker, setHoveredTicker] = useState<string | null>(null);
 
@@ -267,6 +268,14 @@ export default function Holdings({ holdings }: Props) {
                               no data
                             </span>
                           )}
+                          {sources?.[r.ticker]?.funds.length ? (
+                            <span
+                              className="rounded px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide bg-sky-500/10 text-sky-400 border border-sky-500/20"
+                              title={sources[r.ticker].funds.map((f) => `${f.shares.toFixed(2)} via ${f.label}`).join(", ")}
+                            >
+                              via fund
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                     </td>

@@ -1,12 +1,24 @@
-import { useState, useCallback, useEffect } from "react";
-import type { Holding } from "./api/client";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Holding, FundSelection, UnmappedRow, DerivedHolding, SelectionCoverage } from "./api/client";
+import { deriveFundHoldings } from "./api/client";
 import PortfolioInput from "./components/PortfolioInput/PortfolioInput";
+import FundsInput, { FUND_CATEGORIES, EMPTY_FUND_SLOT } from "./components/FundsInput/FundsInput";
+import type { FundCategory, FundSlotState } from "./components/FundsInput/FundsInput";
 import Holdings from "./pages/Holdings";
 import Dashboard from "./pages/Dashboard";
 import Analysis from "./pages/Analysis";
 import Screener from "./pages/Screener";
 
 const LS_KEY = "portfolio_saved";
+const FUNDS_LS_KEY = "portfolio_fund_slots";
+
+// Stable empty-array references so components/memos relying on referential
+// identity (e.g. downstream useMemo deps) don't re-run on every render just
+// because there's no fund data yet.
+const EMPTY_HOLDINGS: DerivedHolding[] = [];
+const EMPTY_UNMAPPED: UnmappedRow[] = [];
+const EMPTY_COVERAGE: SelectionCoverage[] = [];
 
 interface SavedState {
   holdings: Holding[];
@@ -22,7 +34,18 @@ function loadFromLocalStorage(): SavedState | null {
   }
 }
 
-type Tab = "holdings" | "dashboard" | "candidate" | "screener";
+function loadFundSlotsFromLocalStorage(): Record<FundCategory, FundSlotState> {
+  const defaults = Object.fromEntries(FUND_CATEGORIES.map((c) => [c, EMPTY_FUND_SLOT])) as Record<FundCategory, FundSlotState>;
+  try {
+    const raw = localStorage.getItem(FUNDS_LS_KEY);
+    if (!raw) return defaults;
+    return { ...defaults, ...(JSON.parse(raw) as Record<FundCategory, FundSlotState>) };
+  } catch {
+    return defaults;
+  }
+}
+
+type Tab = "holdings" | "dashboard" | "candidate" | "screener" | "savings";
 
 function parseHoldingsFromUrl(): Holding[] {
   const h = new URLSearchParams(window.location.search).get("h");
@@ -37,7 +60,7 @@ function parseHoldingsFromUrl(): Holding[] {
 
 function parseTabFromUrl(): Tab {
   const t = new URLSearchParams(window.location.search).get("tab");
-  const valid: Tab[] = ["holdings", "dashboard", "candidate", "screener"];
+  const valid: Tab[] = ["holdings", "dashboard", "candidate", "screener", "savings"];
   return valid.includes(t as Tab) ? (t as Tab) : "holdings";
 }
 
@@ -46,34 +69,84 @@ const TABS: { id: Tab; label: string; tooltip: string }[] = [
   { id: "dashboard", label: "Analysis", tooltip: "Understand your portfolio" },
   { id: "screener", label: "Find a Stock", tooltip: "Find underpriced quality stocks" },
   { id: "candidate", label: "Test a Stock", tooltip: "Analyze how adding a specific stock would impact your portfolio" },
+  { id: "savings", label: "Savings", tooltip: "Pension, Kupat Gemel LeHashkaa, and Keren Hishtalmut" },
 ];
 
 export default function App() {
-  const [holdings, setHoldings] = useState<Holding[]>(() => {
+  const [manualHoldings, setManualHoldings] = useState<Holding[]>(() => {
     const fromUrl = parseHoldingsFromUrl();
     if (fromUrl.length > 0) return fromUrl;
     return loadFromLocalStorage()?.holdings ?? [];
   });
+  const [fundSlots, setFundSlots] = useState<Record<FundCategory, FundSlotState>>(loadFundSlotsFromLocalStorage);
   const [activeTab, setActiveTab] = useState<Tab>(() => parseTabFromUrl());
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (holdings.length === 0) {
+    if (manualHoldings.length === 0) {
       params.delete("h");
     } else {
-      params.set("h", holdings.map((h) => `${h.ticker}:${h.shares}`).join(","));
+      params.set("h", manualHoldings.map((h) => `${h.ticker}:${h.shares}`).join(","));
     }
     params.set("tab", activeTab);
     const qs = params.toString();
     window.history.replaceState({}, "", qs ? `?${qs}` : window.location.pathname);
-  }, [holdings, activeTab]);
+  }, [manualHoldings, activeTab]);
+
+  useEffect(() => {
+    localStorage.setItem(FUNDS_LS_KEY, JSON.stringify(fundSlots));
+  }, [fundSlots]);
+
+  const fundSelections: FundSelection[] = useMemo(
+    () =>
+      FUND_CATEGORIES.flatMap((category) => {
+        const slot = fundSlots[category];
+        const amount = parseFloat(slot.amountUsd);
+        if (!slot.companyId || !slot.trackId || !isFinite(amount) || amount <= 0) return [];
+        return [{ category, company_id: slot.companyId, track_id: slot.trackId, amount_usd: amount }];
+      }),
+    [fundSlots],
+  );
+
+  const fundHoldingsQuery = useQuery({
+    queryKey: ["fundHoldings", fundSelections],
+    queryFn: () => deriveFundHoldings(fundSelections),
+    enabled: fundSelections.length > 0,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const derivedHoldings = fundSelections.length > 0 ? fundHoldingsQuery.data?.holdings ?? EMPTY_HOLDINGS : EMPTY_HOLDINGS;
+  const unmappedFundRows: UnmappedRow[] =
+    fundSelections.length > 0 ? fundHoldingsQuery.data?.unmapped ?? EMPTY_UNMAPPED : EMPTY_UNMAPPED;
+  const fundCoverage: SelectionCoverage[] =
+    fundSelections.length > 0 ? fundHoldingsQuery.data?.coverage ?? EMPTY_COVERAGE : EMPTY_COVERAGE;
+
+  const combinedHoldings: Holding[] = useMemo(() => {
+    const byTicker = new Map<string, number>();
+    for (const h of manualHoldings) byTicker.set(h.ticker, (byTicker.get(h.ticker) ?? 0) + h.shares);
+    for (const h of derivedHoldings) byTicker.set(h.ticker, (byTicker.get(h.ticker) ?? 0) + h.shares);
+    return [...byTicker.entries()].map(([ticker, shares]) => ({ ticker, shares }));
+  }, [manualHoldings, derivedHoldings]);
+
+  const holdingsSources = useMemo(() => {
+    const sources: Record<string, { manual: number; funds: { label: string; shares: number }[] }> = {};
+    for (const h of manualHoldings) {
+      sources[h.ticker] ??= { manual: 0, funds: [] };
+      sources[h.ticker].manual += h.shares;
+    }
+    for (const h of derivedHoldings) {
+      sources[h.ticker] ??= { manual: 0, funds: [] };
+      sources[h.ticker].funds.push({ label: `${h.source.company_name} - ${h.source.track_name}`, shares: h.shares });
+    }
+    return sources;
+  }, [manualHoldings, derivedHoldings]);
 
   const [hasSaved, setHasSaved] = useState(() => localStorage.getItem(LS_KEY) !== null);
   const [candidateTicker, setCandidateTicker] = useState("");
   const [candidateShares, setCandidateShares] = useState<number | null>(null);
 
   function saveToLocalStorage() {
-    const state: SavedState = { holdings };
+    const state: SavedState = { holdings: manualHoldings };
     localStorage.setItem(LS_KEY, JSON.stringify(state));
     setHasSaved(true);
   }
@@ -146,7 +219,7 @@ export default function App() {
 
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-8 sm:py-8">
         {/* Portfolio Input */}
-        <PortfolioInput holdings={holdings} onChange={setHoldings} />
+        <PortfolioInput holdings={manualHoldings} onChange={setManualHoldings} />
 
         {/* Tab bar */}
         <div className="mt-8 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -173,12 +246,23 @@ export default function App() {
 
         {/* Tab content */}
         <div className="mt-8 fade-in">
-          {activeTab === "holdings" && <Holdings holdings={holdings} />}
+          {activeTab === "holdings" && <Holdings holdings={combinedHoldings} sources={holdingsSources} />}
 
-          {activeTab === "dashboard" && <Dashboard holdings={holdings} />}
+          {activeTab === "dashboard" && <Dashboard holdings={combinedHoldings} />}
 
           {activeTab === "screener" && (
-            <Screener onAnalyze={handleAnalyzeTicker} holdings={holdings} />
+            <Screener onAnalyze={handleAnalyzeTicker} holdings={combinedHoldings} />
+          )}
+
+          {activeTab === "savings" && (
+            <FundsInput
+              slots={fundSlots}
+              onChange={(category, slot) => setFundSlots((prev) => ({ ...prev, [category]: slot }))}
+              unmapped={unmappedFundRows}
+              coverage={fundCoverage}
+              holdingsError={fundHoldingsQuery.isError}
+              holdingsLoading={fundHoldingsQuery.isFetching}
+            />
           )}
 
           {activeTab === "candidate" && (
@@ -217,7 +301,7 @@ export default function App() {
 
               {/* Analysis results */}
               <Analysis
-                holdings={holdings}
+                holdings={combinedHoldings}
                 candidateTicker={candidateTicker}
                 sharesOverride={candidateShares}
                 onOptimalComputed={handleOptimalComputed}

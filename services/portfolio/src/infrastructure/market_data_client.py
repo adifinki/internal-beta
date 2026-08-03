@@ -5,6 +5,25 @@ import httpx
 import pandas as pd
 
 
+def prices_from_info(
+    tickers: list[str],
+    info_by_ticker: dict[str, dict[str, Any]],
+) -> dict[str, float]:
+    """Extract current prices from yfinance info dicts."""
+    prices: dict[str, float] = {}
+    for t in tickers:
+        info = info_by_ticker.get(t, {})
+        p = (
+            info.get("currentPrice")
+            or info.get("regularMarketPrice")
+            or info.get("navPrice")
+            or info.get("previousClose")
+        )
+        if p is not None:
+            prices[t] = float(p)
+    return prices
+
+
 async def fetch_returns(
     client: httpx.AsyncClient,
     tickers: list[str],
