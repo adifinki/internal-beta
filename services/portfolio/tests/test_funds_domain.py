@@ -3,7 +3,12 @@ amount -> proxy-ticker shares math."""
 
 import pytest
 
-from src.domain.funds import build_catalog_response, compute_derived_holdings, find_track
+from src.domain.funds import (
+    build_catalog_response,
+    compute_derived_holdings,
+    compute_selection_coverage,
+    find_track,
+)
 from src.schemas.funds_schemas import FundRow, FundSelection, FundTrackEntry
 
 
@@ -79,7 +84,7 @@ class TestComputeDerivedHoldings:
         selections = [FundSelection(category="pension", company_id="acme", track_id="general", amount_usd=1000.0)]
         prices = {"SPY": 500.0, "LQD": 100.0}
 
-        holdings, unmapped = compute_derived_holdings(selections, catalog, prices)
+        holdings, unmapped, _ = compute_derived_holdings(selections, catalog, prices)
 
         spy = next(h for h in holdings if h.ticker == "SPY")
         assert spy.shares == pytest.approx(1000.0 * 0.5 / 500.0)  # = 1.0
@@ -91,7 +96,7 @@ class TestComputeDerivedHoldings:
         selections = [FundSelection(category="pension", company_id="acme", track_id="general", amount_usd=1000.0)]
         prices = {"SPY": 500.0, "LQD": 100.0}
 
-        holdings, unmapped = compute_derived_holdings(selections, catalog, prices)
+        holdings, unmapped, _ = compute_derived_holdings(selections, catalog, prices)
 
         assert all(h.ticker not in (None, "") for h in holdings)
         assert len(unmapped) == 1
@@ -103,7 +108,7 @@ class TestComputeDerivedHoldings:
         selections = [FundSelection(category="pension", company_id="acme", track_id="general", amount_usd=1000.0)]
         prices = {"SPY": 500.0, "LQD": 100.0}
 
-        holdings, _ = compute_derived_holdings(selections, catalog, prices)
+        holdings, _, _ = compute_derived_holdings(selections, catalog, prices)
 
         spy = next(h for h in holdings if h.ticker == "SPY")
         assert spy.source.category == "pension"
@@ -118,7 +123,7 @@ class TestComputeDerivedHoldings:
         selections = [FundSelection(category="pension", company_id="acme", track_id="general", amount_usd=1000.0)]
         prices = {"SPY": 500.0}  # LQD price missing
 
-        holdings, unmapped = compute_derived_holdings(selections, catalog, prices)
+        holdings, unmapped, _ = compute_derived_holdings(selections, catalog, prices)
 
         tickers = [h.ticker for h in holdings]
         assert "LQD" not in tickers
@@ -129,10 +134,11 @@ class TestComputeDerivedHoldings:
         catalog = _sample_catalog()
         selections = [FundSelection(category="pension", company_id="acme", track_id="nonexistent", amount_usd=1000.0)]
 
-        holdings, unmapped = compute_derived_holdings(selections, catalog, {"SPY": 500.0})
+        holdings, unmapped, coverage = compute_derived_holdings(selections, catalog, {"SPY": 500.0})
 
         assert holdings == []
         assert unmapped == []
+        assert coverage == []
 
     def test_multiple_selections_are_independent(self) -> None:
         catalog = _sample_catalog()
@@ -153,8 +159,48 @@ class TestComputeDerivedHoldings:
         ]
         prices = {"SPY": 500.0, "LQD": 100.0}
 
-        holdings, _ = compute_derived_holdings(selections, catalog, prices)
+        holdings, _, coverage = compute_derived_holdings(selections, catalog, prices)
 
         spy_holdings = [h for h in holdings if h.ticker == "SPY"]
         assert len(spy_holdings) == 2  # one per selection, NOT pre-summed — the frontend sums by ticker
         assert {h.source.category for h in spy_holdings} == {"pension", "keren_hishtalmut"}
+        assert len(coverage) == 2
+
+
+class TestComputeSelectionCoverage:
+    def test_partial_coverage_computes_mapped_fraction(self) -> None:
+        catalog = _sample_catalog()
+        selection = FundSelection(category="pension", company_id="acme", track_id="general", amount_usd=1000.0)
+        track = find_track(catalog, "pension", "acme", "general")
+        assert track is not None
+
+        coverage = compute_selection_coverage(selection, track)
+
+        # mapped rows: SPY (0.5) + LQD (0.3) = 0.8; total = 0.5 + 0.3 + 0.2 = 1.0
+        assert coverage.mapped_pct == pytest.approx(0.8)
+        assert coverage.total_pct == pytest.approx(1.0)
+        assert coverage.mapped_amount_usd == pytest.approx(800.0)
+        assert coverage.company_name == "Acme"
+        assert coverage.track_name == "General"
+
+    def test_fully_mapped_track_has_full_coverage(self) -> None:
+        catalog = [
+            FundTrackEntry(
+                category="pension",
+                company_id="acme",
+                company_name="Acme",
+                track_id="allmapped",
+                track_name="All Mapped",
+                as_of_date="2025-01-01",
+                rows=[FundRow(label="US equities", pct_of_fund=1.0, proxy_ticker="SPY")],
+            )
+        ]
+        selection = FundSelection(category="pension", company_id="acme", track_id="allmapped", amount_usd=500.0)
+        track = find_track(catalog, "pension", "acme", "allmapped")
+        assert track is not None
+
+        coverage = compute_selection_coverage(selection, track)
+
+        assert coverage.mapped_pct == pytest.approx(1.0)
+        assert coverage.total_pct == pytest.approx(1.0)
+        assert coverage.mapped_amount_usd == pytest.approx(500.0)

@@ -7,6 +7,7 @@ from src.schemas.funds_schemas import (
     DerivedHoldingSource,
     FundSelection,
     FundTrackEntry,
+    SelectionCoverage,
     UnmappedRow,
 )
 
@@ -44,13 +45,38 @@ def build_catalog_response(catalog: list[FundTrackEntry]) -> CatalogResponse:
     )
 
 
+def compute_selection_coverage(selection: FundSelection, track: FundTrackEntry) -> SelectionCoverage:
+    """Compute what fraction of a fund's disclosed allocation actually maps to
+    a real tradeable proxy vs. is silently dropped (no proxy_ticker).
+
+    mapped_pct / total_pct is the fraction of the *disclosed* allocation that's
+    tradeable; total_pct need not be 1.0 (funds can disclose >100% of value,
+    e.g. via leveraged sleeves), so it's used as the normalizing denominator
+    rather than assumed to be 1.0.
+    """
+    mapped_pct = sum(row.pct_of_fund for row in track.rows if row.proxy_ticker is not None)
+    total_pct = sum(row.pct_of_fund for row in track.rows)
+    mapped_ratio = (mapped_pct / total_pct) if total_pct > 0 else 0.0
+
+    return SelectionCoverage(
+        category=track.category,
+        company_name=track.company_name,
+        track_name=track.track_name,
+        amount_usd=selection.amount_usd,
+        mapped_pct=mapped_pct,
+        total_pct=total_pct,
+        mapped_amount_usd=selection.amount_usd * mapped_ratio,
+    )
+
+
 def compute_derived_holdings(
     selections: list[FundSelection],
     catalog: list[FundTrackEntry],
     prices: dict[str, float],
-) -> tuple[list[DerivedHolding], list[UnmappedRow]]:
+) -> tuple[list[DerivedHolding], list[UnmappedRow], list[SelectionCoverage]]:
     holdings: list[DerivedHolding] = []
     unmapped: list[UnmappedRow] = []
+    coverage: list[SelectionCoverage] = []
 
     for selection in selections:
         track = find_track(catalog, selection.category, selection.company_id, selection.track_id)
@@ -60,6 +86,7 @@ def compute_derived_holdings(
         source = DerivedHoldingSource(
             category=track.category, company_name=track.company_name, track_name=track.track_name
         )
+        coverage.append(compute_selection_coverage(selection, track))
 
         for row in track.rows:
             if row.proxy_ticker is None:
@@ -81,4 +108,4 @@ def compute_derived_holdings(
             shares = selection.amount_usd * row.pct_of_fund / price
             holdings.append(DerivedHolding(ticker=row.proxy_ticker, shares=shares, source=source))
 
-    return holdings, unmapped
+    return holdings, unmapped, coverage
